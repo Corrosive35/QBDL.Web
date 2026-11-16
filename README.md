@@ -2,10 +2,11 @@
 
 A self-hosted web application for downloading high-quality music from Qobuz. Built with Blazor Server (.NET 8) and designed to run in Docker.
 
-![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)
+[![GitHub](https://img.shields.io/github/v/tag/Corrosive35/QBDL.Web?sort=semver&logo=github&label=GitHub)](https://github.com/Corrosive35/QBDL.Web)
 [![Docker Hub](https://img.shields.io/docker/v/thimble9057/qobuzdlx.web?sort=semver&logo=docker&label=Docker%20Hub)](https://hub.docker.com/r/thimble9057/qobuzdlx.web)
 [![Docker pulls](https://img.shields.io/docker/pulls/thimble9057/qobuzdlx.web?logo=docker)](https://hub.docker.com/r/thimble9057/qobuzdlx.web)
-![License](https://img.shields.io/badge/License-MIT-green)
+![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)
+[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
 ---
 
