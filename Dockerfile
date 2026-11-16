@@ -1,10 +1,15 @@
 # Stage 1: Build
-FROM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+# Le SDK tourne sur l'architecture de la machine de build ($BUILDPLATFORM) et compile pour
+# l'architecture visée ($TARGETARCH : amd64 ou arm64), deux variables que BuildKit renseigne seul.
+# Sans cela, l'image arm64 construite sur un runner x86 ferait tourner tout le SDK .NET sous
+# émulation QEMU : lent, et non pris en charge par Microsoft.
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
+ARG TARGETARCH
 WORKDIR /src
 COPY QBDL.Web.csproj .
-RUN dotnet restore
+RUN dotnet restore -a $TARGETARCH
 COPY . .
-RUN dotnet publish -c Release -o /app --no-restore
+RUN dotnet publish -c Release -a $TARGETARCH -o /app --no-restore
 
 # Stage 2: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime
