@@ -1,0 +1,42 @@
+# Page « Overview » de Docker Hub synchronisée sur le README.
+#
+# À chaque modification de README.md sur main, la présentation de thimble9057/qobuzdlx.web
+# reprend le README tel quel. Les liens relatifs (captures, LICENSE) sont convertis en adresses
+# GitHub absolues, sans quoi ils seraient cassés sur Docker Hub. Lancement manuel possible depuis
+# l'onglet Actions.
+#
+# Secret attendu (Settings → Secrets and variables → Actions) : DOCKERHUB_DESCRIPTION_TOKEN, jeton
+# d'accès personnel Docker Hub de portée « Read, Write, Delete » — Docker Hub n'accepte pas moins
+# pour modifier une description. Il est distinct de DOCKERHUB_TOKEN, qui publie les images et
+# n'a pas besoin du droit de suppression.
+#
+# La description courte (100 caractères, sous le nom du dépôt) n'est pas touchée : elle se
+# modifie directement sur Docker Hub.
+
+name: Docker Hub description
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - README.md
+      - .github/workflows/dockerhub-description.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  description:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: peter-evans/dockerhub-description@v5
+        with:
+          username: thimble9057
+          password: ${{ secrets.DOCKERHUB_DESCRIPTION_TOKEN }}
+          repository: thimble9057/qobuzdlx.web
+          enable-url-completion: true
