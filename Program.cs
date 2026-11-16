@@ -178,7 +178,7 @@ app.UseRequestLocalization(options =>
 // Sonde utilisée par l'application Android pour valider qu'une URL saisie pointe bien sur une
 // instance QBDL.Web avant de l'enregistrer. Volontairement non authentifiée et sans donnée
 // sensible : le nom de l'application et sa version suffisent à lever l'ambiguïté. Avant la
-// 1.7.0, la sonde répondait « QobuzDLX.Web » : QobuzDL.Remote accepte les deux noms.
+// 1.7.0, la sonde répondait « QobuzDLX.Web » : QBDL.Remote accepte les deux noms.
 app.MapGet("/healthz", () => Results.Json(new
 {
     app = "QBDL.Web",
@@ -190,7 +190,7 @@ app.MapGet("/healthz", () => Results.Json(new
 // prérendu, sans attendre l'établissement du circuit.
 //
 // Le chemin date de l'époque du mot de passe unique ; il est conservé parce que l'application
-// Android (QobuzDL.Remote) en dépend.
+// Android (QBDL.Remote) en dépend.
 app.MapPost("/auth/unlock", async (HttpContext ctx, UserStore users, AppAccessGate gate) =>
 {
     var form = await ctx.Request.ReadFormAsync();
