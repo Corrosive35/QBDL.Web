@@ -3,7 +3,8 @@
 A self-hosted web application for downloading high-quality music from Qobuz. Built with Blazor Server (.NET 8) and designed to run in Docker.
 
 ![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)
+[![Docker Hub](https://img.shields.io/docker/v/thimble9057/qobuzdlx.web?sort=semver&logo=docker&label=Docker%20Hub)](https://hub.docker.com/r/thimble9057/qobuzdlx.web)
+[![Docker pulls](https://img.shields.io/docker/pulls/thimble9057/qobuzdlx.web?logo=docker)](https://hub.docker.com/r/thimble9057/qobuzdlx.web)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 ---
@@ -11,8 +12,9 @@ A self-hosted web application for downloading high-quality music from Qobuz. Bui
 ## Features
 
 - **Web-based UI** — Dark theme, responsive, accessible from any browser
-- **Android app** — A WebView shell that points at your own server (now a separate project,
-  `QobuzDL.Remote`), plus an installable PWA if you prefer the browser
+- **Android app** — A WebView shell that points at your own server
+  ([QobuzDL.Remote](https://github.com/Corrosive35/QobuzDL.Remote)), plus an installable PWA if
+  you prefer the browser
 - **Multiple download types** — Albums, tracks, playlists, artists, labels, favorites
 - **User accounts** — Administrator-managed accounts sharing a single Qobuz subscription; each user
   has their own download folder, quality, templates, tagging options, language and download queue
@@ -251,15 +253,16 @@ Two ways to get the app on your phone, both pointing at your own server.
 **Install from the browser.** Open your instance in Chrome and pick *Add to home screen*. You get
 the icon and a window without an address bar. Nothing to build.
 
-**Or build the APK.** The `QobuzDL.Remote` project — a sibling directory, no longer part of this
-repository — holds a small Kotlin project: a WebView shell around the same interface, so there is
-no second UI to maintain. It adds what a browser tab cannot do: the server address is remembered,
+**Or install the APK.** [QobuzDL.Remote](https://github.com/Corrosive35/QobuzDL.Remote) is a
+separate project: a small WebView shell around the same interface, so there is no second UI to
+maintain. It adds what a browser tab cannot do: the server address is remembered,
 rotating the phone no longer reloads the page, and the app recovers on its own after a spell in
 the background.
 
 The setup screen accepts `192.168.1.42`, `qobuz.mydomain.com` or a full URL, tries HTTPS then HTTP
-(with and without port 8080), and only saves an address once `/healthz` has answered. Build
-instructions and release signing are in that project's own `README.md`.
+(with and without port 8080), and only saves an address once `/healthz` has answered. The signed
+APK is on its [Releases](https://github.com/Corrosive35/QobuzDL.Remote/releases) page; build
+instructions are in its own `README.md`.
 
 > **Reverse proxy:** make sure WebSockets are proxied. Without them SignalR silently falls back to
 > long polling — the app still works, but every click gains 300–800 ms and the battery drains.
