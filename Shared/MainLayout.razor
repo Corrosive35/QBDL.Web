@@ -1,0 +1,267 @@
+@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.WebUtilities
+@inject QobuzApiService Api
+@inject SettingsService Settings
+@inject AppGuardService Guard
+@inject UserStore Users
+@inject LocalizationService Loc
+@inject DownloadService Download
+@implements IDisposable
+
+@{
+    var needsSetup = !Users.HasUsers;
+    var account = Guard.Account;
+}
+
+@if (needsSetup)
+{
+    <div id="app">
+        <div class="auth-shell">
+            <div class="auth-card">
+                <div class="card">
+                    <div style="text-align:center;margin-bottom:20px;">
+                        <h2 style="color:var(--accent);font-size:1.8em;">QBDL</h2>
+                        <p style="color:var(--text-secondary);font-size:0.85em;">@Loc["setup.subtitle"]</p>
+                    </div>
+
+                    @if (_setupError != null)
+                    {
+                        <div class="auth-error">@Loc[_setupError]</div>
+                    }
+
+                    @* Formulaire HTML classique, comme le déverrouillage : le compte est créé et le
+                       cookie posé par une vraie réponse HTTP, dès le prérendu. *@
+                    <form method="post" action="/auth/setup">
+                        <div class="form-group">
+                            <label for="setup-username">@Loc["auth.username"]</label>
+                            <input id="setup-username" name="username" type="text" autocomplete="username"
+                                   autocapitalize="none" spellcheck="false" value="@UserStore.DefaultAdminName" />
+                        </div>
+                        <div class="form-group">
+                            <label for="setup-password">@Loc["auth.password"]</label>
+                            <input id="setup-password" name="password" type="password" autocomplete="new-password" autofocus />
+                        </div>
+                        <div class="form-group">
+                            <label for="setup-confirm">@Loc["auth.confirm"]</label>
+                            <input id="setup-confirm" name="confirm" type="password" autocomplete="new-password" />
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px;">@Loc["setup.create"]</button>
+                    </form>
+                </div>
+                <LanguageSwitch />
+            </div>
+        </div>
+    </div>
+}
+else if (account == null)
+{
+    <div id="app">
+        <div class="auth-shell">
+            <div class="auth-card">
+                <div class="card">
+                    <div style="text-align:center;margin-bottom:20px;">
+                        <h2 style="color:var(--accent);font-size:1.8em;">QBDL</h2>
+                        <p style="color:var(--text-secondary);font-size:0.85em;">@Loc["lock.subtitle"]</p>
+                    </div>
+
+                    @if (Guard.IsLockedOut)
+                    {
+                        <div class="auth-error">@Loc.P("lock.retrySeconds", Guard.RemainingSeconds)</div>
+                    }
+                    else if (_lockError)
+                    {
+                        <div class="auth-error">@Loc["lock.wrongPassword"]</div>
+                    }
+
+                    @* Formulaire HTML classique, et non @onsubmit : il fonctionne dès le prérendu,
+                       sans attendre que le circuit SignalR soit établi — sur un réseau lent, cela
+                       évite un bouton qui reste inerte plusieurs secondes. Les champs nommés et leurs
+                       autocomplete se font aussi reconnaître par le gestionnaire de mots de passe du
+                       téléphone. *@
+                    <form method="post" action="/auth/unlock">
+                        <input type="hidden" name="returnUrl" value="@_returnUrl" />
+                        <div class="form-group">
+                            <label for="access-username">@Loc["auth.username"]</label>
+                            <input id="access-username" name="username" type="text" autocomplete="username"
+                                   autocapitalize="none" spellcheck="false" autofocus disabled="@Guard.IsLockedOut" />
+                        </div>
+                        <div class="form-group">
+                            <label for="access-password">@Loc["auth.password"]</label>
+                            <input id="access-password" name="password" type="password" autocomplete="current-password" placeholder='@Loc["lock.passwordPlaceholder"]' disabled="@Guard.IsLockedOut" />
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px;" disabled="@Guard.IsLockedOut">@Loc["lock.unlock"]</button>
+                    </form>
+                </div>
+                <LanguageSwitch />
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div id="app">
+        @if (!Api.IsLoggedIn)
+        {
+            <div class="auth-shell">
+                @Body
+                @* Sans compte Qobuz connecté, un utilisateur n'a rien d'autre à faire ici que
+                   d'attendre l'administrateur : il doit au moins pouvoir quitter l'application. *@
+                <form method="post" action="/auth/lock" class="auth-logout">
+                    <button type="submit" class="btn btn-secondary btn-sm">@Loc.T("nav.logoutAs", account.Username)</button>
+                </form>
+                <LanguageSwitch />
+            </div>
+        }
+        else
+        {
+            @* Barre supérieure et voile : masqués par CSS au-dessus de 768px, où la barre
+               latérale reprend sa place dans le flux. *@
+            <header class="app-topbar">
+                <button class="topbar-burger" @onclick="ToggleMenu" aria-label='@Loc["nav.menu"]'>&#9776;</button>
+                <span class="topbar-title">QBDL</span>
+            </header>
+            <div class="sidebar-backdrop @(_menuOpen ? "open" : "")" @onclick="CloseMenu"></div>
+
+            <nav class="sidebar @(_menuOpen ? "open" : "")">
+                <div class="sidebar-logo">QBDL</div>
+                <div class="sidebar-user">
+                    <strong>@account.Username</strong>
+                    @* Le compte Qobuz est celui de toute l'instance : il est rappelé sous l'identifiant
+                       de l'utilisateur, pour qu'on sache avec quel abonnement on télécharge. *@
+                    @if (!string.IsNullOrEmpty(Settings.Settings.UserDisplayName))
+                    {
+                        <span class="sidebar-qobuz" title='@Loc["nav.qobuzAccount"]'>Qobuz · @Settings.Settings.UserDisplayName</span>
+                    }
+                    @* Sans abonnement, UserLabel est vide et la barre latérale n'affichait donc
+                       rien du tout : le compte paraissait normal jusqu'au premier téléchargement.
+                       La pastille d'alerte prend ici la place du libellé d'offre. *@
+                    @if (!Settings.Settings.HasSubscription)
+                    {
+                        <a class="user-label user-label-alert" href="/settings"
+                           title='@Loc["account.badge.noneTitle"]'>@Loc["account.badge.none"]</a>
+                    }
+                    else if (IsSubscriptionExpired)
+                    {
+                        <a class="user-label user-label-alert" href="/settings"
+                           title='@Loc["account.badge.expiredTitle"]'>@Loc["account.badge.expired"]</a>
+                    }
+                    else if (!string.IsNullOrEmpty(Settings.Settings.UserLabel))
+                    {
+                        <span class="user-label">@Settings.Settings.UserLabel</span>
+                    }
+                </div>
+                <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">@Loc["nav.search"]</NavLink>
+                @* Le libellé est enveloppé dans un <span> : entre deux éléments, l'espacement du
+                   source est ignoré par le flex, alors qu'un nœud texte nu deviendrait un item
+                   anonyme avec ses blancs d'indentation. *@
+                <NavLink class="nav-link" href="/telechargement">
+                    <span>@Loc["nav.download"]</span>
+                    @if (Download.RemainingCount(Guard.UserId) is var remaining && remaining > 0)
+                    {
+                        <span class="nav-badge">@remaining</span>
+                    }
+                </NavLink>
+                <NavLink class="nav-link" href="/settings">@Loc["nav.settings"]</NavLink>
+                @if (account.IsAdmin)
+                {
+                    <NavLink class="nav-link" href="/users">@Loc["nav.users"]</NavLink>
+                }
+                <div class="nav-spacer"></div>
+                @* Déconnecte de l'application, et elle seule : le compte Qobuz est partagé par tous
+                   les utilisateurs, il ne se déconnecte que depuis les Paramètres, par un admin. *@
+                <form method="post" action="/auth/lock" class="nav-form">
+                    <button type="submit" class="nav-link">@Loc["nav.logout"]</button>
+                </form>
+                <LanguageSwitch />
+                <div class="sidebar-version">v@(AppVersion)</div>
+            </nav>
+            <div class="main-content">
+                @Body
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private bool _lockError;
+
+    // Erreur de création du premier compte, revenue par l'URL après le POST. Liste fermée : la valeur
+    // vient de la query, elle ne doit pas permettre d'afficher n'importe quelle clé — ni n'importe quel
+    // texte, une clé inconnue s'affichant telle quelle.
+    private string? _setupError;
+    private static readonly HashSet<string> SetupErrors = new()
+    {
+        "setup.error.mismatch",
+        "setup.error.alreadyDone",
+        "users.error.invalidName",
+        "users.error.nameTaken",
+        "users.error.emptyPassword",
+    };
+
+    private bool IsSubscriptionExpired => Settings.Settings.IsSubscriptionExpired();
+
+    // Chemin à réafficher après le POST de déverrouillage, pour ne pas ramener systématiquement
+    // à l'accueil quelqu'un qui rouvrait la page Téléchargement.
+    private string _returnUrl = "/";
+
+    // Tiroir de navigation : n'a d'effet que sous 768px, où le CSS sort la barre latérale du flux.
+    private bool _menuOpen;
+
+    // Capturé au premier rendu : les événements de la file arrivent depuis les workers, hors du
+    // circuit, et n'ont qu'à comparer un identifiant.
+    private string _userId = "";
+
+    private static readonly string AppVersion =
+        System.Reflection.Assembly.GetExecutingAssembly().GetName().Version is { } v
+            ? $"{v.Major}.{v.Minor}.{v.Build}"
+            : "1.7.0";
+
+    [Inject] NavigationManager NavigationManager { get; set; } = default!;
+
+    protected override void OnInitialized()
+    {
+        // La connexion étant un POST suivi d'une redirection, l'échec ne peut revenir que
+        // par l'URL. Le cas « throttled » n'a pas besoin d'être lu ici : Guard.IsLockedOut, qui
+        // interroge un état applicatif et non le circuit, l'expose déjà.
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+        _lockError = query.TryGetValue("lock", out var lockState) && lockState == "bad";
+        if (query.TryGetValue("setup", out var setupState) && SetupErrors.Contains(setupState.ToString()))
+            _setupError = setupState.ToString();
+        // Sans la query : la tentative suivante ne doit pas réinjecter ?lock=bad dans returnUrl.
+        _returnUrl = string.IsNullOrEmpty(uri.LocalPath) ? "/" : uri.LocalPath;
+
+        _userId = Guard.UserId;
+
+        NavigationManager.LocationChanged += OnLocationChanged;
+        // OnQueueChanged et non OnProgressChanged : la pastille n'a besoin de savoir que lorsque la
+        // file change, quelques fois par minute. L'autre événement redessinerait la barre latérale
+        // à chaque bloc de 80 Ko reçu.
+        Download.OnQueueChanged += OnQueueChanged;
+    }
+
+    // null = changement qui concerne tout le monde (levée du blocage d'abonnement).
+    private void OnQueueChanged(string? ownerId)
+    {
+        if (ownerId == null || ownerId == _userId) InvokeAsync(StateHasChanged);
+    }
+
+    // Un seul point de branchement pour refermer le tiroir après une navigation, plutôt qu'un
+    // @onclick sur chacun des liens.
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        if (!_menuOpen) return;
+        _menuOpen = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ToggleMenu() => _menuOpen = !_menuOpen;
+
+    private void CloseMenu() => _menuOpen = false;
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+        Download.OnQueueChanged -= OnQueueChanged;
+    }
+}

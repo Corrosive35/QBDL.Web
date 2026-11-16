@@ -1,0 +1,29 @@
+@inject LocalizationService Loc
+@inject NavigationManager Nav
+
+@* Bascule FR | EN. Un vrai formulaire, et non un gestionnaire Blazor : la langue est fixée par
+   requête (middleware de localisation), et un circuit garde la culture de la connexion qui l'a
+   ouvert — seul un rechargement peut donc l'appliquer. Ce rechargement ne coûte rien : la connexion
+   vit dans un cookie, et la file comme la recherche dans des singletons. Fonctionne aussi au
+   prérendu, avant que le circuit ne soit établi. *@
+<form class="lang-switch" method="post" action="/culture">
+    <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+    <button type="submit" name="lang" value="@LocalizationService.French"
+            class="@(Loc.Current == LocalizationService.French ? "active" : "")">FR</button>
+    <span class="lang-switch-sep">|</span>
+    <button type="submit" name="lang" value="@LocalizationService.English"
+            class="@(Loc.Current == LocalizationService.English ? "active" : "")">EN</button>
+</form>
+
+@code {
+    // Le chemin seul, comme pour le déverrouillage : la query (?lock=bad, ?pwd=ok…) ne doit pas être
+    // rejouée après la bascule.
+    private string ReturnUrl
+    {
+        get
+        {
+            var path = new Uri(Nav.Uri).AbsolutePath;
+            return string.IsNullOrEmpty(path) ? "/" : path;
+        }
+    }
+}

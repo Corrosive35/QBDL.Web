@@ -1,0 +1,17 @@
+# Sorties de compilation
+bin/
+obj/
+
+# Données d'une instance locale : jamais dans le dépôt
+config/
+downloads/
+
+# Fichiers d'éditeur et d'outillage
+.vs/
+.claude/
+*.user
+
+# settings.json porte le jeton Qobuz et le secret d'application ; les sauvegardes *.bak aussi
+# (settings.json.pre-1.7.0.bak, créé par la migration 1.7.0).
+settings.json
+*.bak

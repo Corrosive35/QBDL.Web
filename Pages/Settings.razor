@@ -1,0 +1,535 @@
+@page "/settings"
+@using System.Globalization
+@using Microsoft.AspNetCore.WebUtilities
+@inject SettingsService SettingsSvc
+@inject UserStore Users
+@inject AppGuardService Guard
+@inject QobuzApiService Api
+@inject DownloadService Download
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+@inherits LocalizedComponentBase
+
+<h3 style="margin-bottom:16px;">@Loc["settings.title"]</h3>
+
+<!-- Compte Qobuz — en premier : sans abonnement actif, rien d'autre sur cette page n'a d'effet.
+     Partagé par tous les utilisateurs : chacun le consulte, seul un administrateur le déconnecte. -->
+<div class="card">
+    <div class="card-title">@Loc["settings.account.title"]</div>
+
+    @if (!A.HasSubscription || A.IsSubscriptionExpired())
+    {
+        <div class="account-alert">
+            @(!A.HasSubscription ? Loc["settings.account.noneWarning"] : Loc["settings.account.expiredWarning"])
+        </div>
+    }
+
+    <div class="settings-grid">
+        <div class="form-group">
+            <label>@Loc["settings.account.user"]</label>
+            <div class="account-value">@Dash(A.UserDisplayName)</div>
+        </div>
+        <div class="form-group">
+            <label>@Loc["settings.account.offer"]</label>
+            <div class="account-value">@(string.IsNullOrEmpty(A.SubscriptionOffer) ? Loc["settings.account.noOffer"] : A.SubscriptionOffer)</div>
+        </div>
+        <div class="form-group">
+            <label>@Loc["settings.account.expires"]</label>
+            <div class="account-value">@FormatDate(A.SubscriptionEndDate)</div>
+        </div>
+        <div class="form-group">
+            <label>@Loc["settings.account.country"]</label>
+            <div class="account-value">@Dash(A.UserCountry)</div>
+        </div>
+        <div class="form-group">
+            <label>@Loc["settings.account.rights"]</label>
+            <div class="account-value">@StreamingRights</div>
+        </div>
+    </div>
+
+    @* Après un renouvellement, relire la fiche ici évite d'avoir à se déconnecter puis reconnecter —
+       et c'est aussi ce qui débloque la file restée en attente. *@
+    <div style="margin-top:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" @onclick="RefreshAccount" disabled="@_refreshing">
+            @(_refreshing ? Loc["settings.account.refreshing"] : Loc["settings.account.refresh"])
+        </button>
+        @* Couperait le téléchargement de tous les utilisateurs : réservé à l'administrateur, et
+           confirmé par un second clic. *@
+        @if (Guard.IsAdmin && _confirmDisconnect)
+        {
+            <button class="btn btn-danger" @onclick="DisconnectQobuz">@Loc["settings.account.disconnectConfirm"]</button>
+            <button class="btn btn-secondary" @onclick="() => _confirmDisconnect = false">@Loc["common.cancel"]</button>
+        }
+        else if (Guard.IsAdmin)
+        {
+            <button class="btn btn-secondary" @onclick="() => _confirmDisconnect = true">@Loc["settings.account.disconnect"]</button>
+        }
+        @if (!string.IsNullOrEmpty(_accountMessage))
+        {
+            <span style="font-size:0.85em;color:var(--text-secondary);">@_accountMessage</span>
+        }
+    </div>
+</div>
+
+<!-- Download Folder — fixé par l'administrateur : un utilisateur qui le choisirait pourrait écrire
+     n'importe où dans le conteneur. -->
+<div class="card">
+    <div class="card-title">@Loc["settings.folder.title"]</div>
+    <div class="form-group">
+        <label>@Loc["settings.folder.location"]</label>
+        <div class="account-value">@S.DownloadLocation</div>
+    </div>
+    <div style="font-size:0.8em;color:var(--text-secondary);margin-top:4px;">
+        @if (Guard.IsAdmin)
+        {
+            <span>@Loc["settings.folder.adminHint"] <a href="/users">@Loc["nav.users"]</a></span>
+        }
+        else
+        {
+            <span>@Loc["settings.folder.userHint"]</span>
+        }
+    </div>
+</div>
+
+<!-- Quality -->
+<div class="card">
+    <div class="card-title">@Loc["settings.quality.title"]</div>
+    <div class="quality-group">
+        <button class="quality-btn @(S.QualityFormat == "5" ? "active" : "")" @onclick='() => SetQuality("5", ".mp3")'>MP3 320</button>
+        <button class="quality-btn @(S.QualityFormat == "6" ? "active" : "")" @onclick='() => SetQuality("6", ".flac")'>FLAC 16bit</button>
+        <button class="quality-btn @(S.QualityFormat == "7" ? "active" : "")" @onclick='() => SetQuality("7", ".flac")'>FLAC 24bit &le;96kHz</button>
+        <button class="quality-btn @(S.QualityFormat == "27" ? "active" : "")" @onclick='() => SetQuality("27", ".flac")'>FLAC 24bit 192kHz</button>
+    </div>
+    <div style="font-size:0.8em;color:var(--text-secondary);margin-top:8px;">
+        @Loc["settings.quality.hint"]
+    </div>
+</div>
+
+<!-- Templates -->
+<div class="card">
+    <div class="card-title">@Loc["settings.templates.title"]</div>
+    <div class="settings-grid">
+        <div class="form-group">
+            <label>@Loc["settings.templates.artist"]</label>
+            <input type="text" @bind="S.ArtistTemplate" @bind:after="Save" />
+        </div>
+        <div class="form-group">
+            <label>@Loc["settings.templates.album"]</label>
+            <input type="text" @bind="S.AlbumTemplate" @bind:after="Save" />
+        </div>
+        <div class="form-group">
+            <label>@Loc["settings.templates.track"]</label>
+            <input type="text" @bind="S.TrackTemplate" @bind:after="Save" />
+        </div>
+        <div class="form-group">
+            <label>@Loc["settings.templates.vaTrack"]</label>
+            <input type="text" @bind="S.VaTrackTemplate" @bind:after="Save" />
+        </div>
+        <div class="form-group">
+            <label>@Loc["settings.templates.playlist"]</label>
+            <input type="text" @bind="S.PlaylistTemplate" @bind:after="Save" />
+        </div>
+        <div class="form-group">
+            <label>@Loc["settings.templates.favorites"]</label>
+            <input type="text" @bind="S.FavoritesTemplate" @bind:after="Save" />
+        </div>
+        <div class="form-group">
+            <label>@Loc["settings.templates.cd"]</label>
+            <input type="text" @bind="S.CdTemplate" @bind:after="Save" />
+        </div>
+    </div>
+
+    <!-- Template Variables Reference -->
+    <details class="template-help" style="margin-top:16px;">
+        <summary class="template-help-toggle">@Loc["settings.templates.varsToggle"]</summary>
+        <div class="template-help-content">
+
+            <div class="template-section">
+                <div class="template-section-title">@Loc["settings.templates.section.release"]</div>
+                <div class="template-tokens">
+                    <span class="token" @onclick='() => CopyToken("%AlbumID%")'>%AlbumID%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumURL%")'>%AlbumURL%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumGenre%")'>%AlbumGenre%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumComposer%")'>%AlbumComposer%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumTitle%")'>%AlbumTitle%</span>
+                    <span class="token" @onclick='() => CopyToken("%Label%")'>%Label%</span>
+                    <span class="token" @onclick='() => CopyToken("%Copyright%")'>%Copyright%</span>
+                    <span class="token" @onclick='() => CopyToken("%UPC%")'>%UPC%</span>
+                    <span class="token" @onclick='() => CopyToken("%ReleaseDate%")'>%ReleaseDate%</span>
+                    <span class="token" @onclick='() => CopyToken("%Year%")'>%Year%</span>
+                    <span class="token" @onclick='() => CopyToken("%ReleaseType%")'>%ReleaseType%</span>
+                    <span class="token" @onclick='() => CopyToken("%ArtistName%")'>%ArtistName%</span>
+                    <span class="token" @onclick='() => CopyToken("%Format%")'>%Format%</span>
+                    <span class="token" @onclick='() => CopyToken("%FormatWithQuality%")'>%FormatWithQuality%</span>
+                    <span class="token" @onclick='() => CopyToken("%FormatWithHiResQuality%")'>%FormatWithHiResQuality%</span>
+                    <span class="token" @onclick='() => CopyToken("%BitDepth%")'>%BitDepth%</span>
+                    <span class="token" @onclick='() => CopyToken("%SampleRate%")'>%SampleRate%</span>
+                </div>
+            </div>
+
+            <details class="template-subsection">
+                <summary>@Loc["settings.templates.section.parentalRelease"]</summary>
+                <div class="template-tokens">
+                    <span class="token" @onclick='() => CopyToken("%AlbumPA%")'>%AlbumPA%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumPAShort%")'>%AlbumPAShort%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumPAifEx%")'>%AlbumPAifEx%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumPAifExShort%")'>%AlbumPAifExShort%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumPAifCl%")'>%AlbumPAifCl%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumPAifClShort%")'>%AlbumPAifClShort%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumPAEnclosed%")'>%AlbumPAEnclosed%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumPAEnclosed[]%")'>%AlbumPAEnclosed[]%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumPAEnclosedShort%")'>%AlbumPAEnclosedShort%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumPAEnclosedShort[]%")'>%AlbumPAEnclosedShort[]%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosed%")'>%AlbumPAifExEnclosed%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosed[]%")'>%AlbumPAifExEnclosed[]%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosedShort%")'>%AlbumPAifExEnclosedShort%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosedShort[]%")'>%AlbumPAifExEnclosedShort[]%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosed%")'>%AlbumPAifClEnclosed%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosed[]%")'>%AlbumPAifClEnclosed[]%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosedShort%")'>%AlbumPAifClEnclosedShort%</span>
+                    <span class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosedShort[]%")'>%AlbumPAifClEnclosedShort[]%</span>
+                </div>
+            </details>
+
+            <div class="template-section">
+                <div class="template-section-title">@Loc["settings.templates.section.track"]</div>
+                <div class="template-tokens">
+                    <span class="token" @onclick='() => CopyToken("%TrackArtist%")'>%TrackArtist%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackComposer%")'>%TrackComposer%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackID%")'>%TrackID%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackNumber%")'>%TrackNumber%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackTitle%")'>%TrackTitle%</span>
+                    <span class="token" @onclick='() => CopyToken("%ISRC%")'>%ISRC%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackFormat%")'>%TrackFormat%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackFormatWithQuality%")'>%TrackFormatWithQuality%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackFormatWithHiResQuality%")'>%TrackFormatWithHiResQuality%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackBitDepth%")'>%TrackBitDepth%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackSampleRate%")'>%TrackSampleRate%</span>
+                </div>
+            </div>
+
+            <details class="template-subsection">
+                <summary>@Loc["settings.templates.section.parentalTrack"]</summary>
+                <div class="template-tokens">
+                    <span class="token" @onclick='() => CopyToken("%TrackPA%")'>%TrackPA%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackPAShort%")'>%TrackPAShort%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackPAifEx%")'>%TrackPAifEx%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackPAifExShort%")'>%TrackPAifExShort%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackPAifCl%")'>%TrackPAifCl%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackPAifClShort%")'>%TrackPAifClShort%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackPAEnclosed%")'>%TrackPAEnclosed%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackPAEnclosed[]%")'>%TrackPAEnclosed[]%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackPAEnclosedShort%")'>%TrackPAEnclosedShort%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackPAEnclosedShort[]%")'>%TrackPAEnclosedShort[]%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackPAifExEnclosed%")'>%TrackPAifExEnclosed%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackPAifExEnclosed[]%")'>%TrackPAifExEnclosed[]%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackPAifExEnclosedShort%")'>%TrackPAifExEnclosedShort%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackPAifExEnclosedShort[]%")'>%TrackPAifExEnclosedShort[]%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackPAifClEnclosed%")'>%TrackPAifClEnclosed%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackPAifClEnclosed[]%")'>%TrackPAifClEnclosed[]%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackPAifClEnclosedShort%")'>%TrackPAifClEnclosedShort%</span>
+                    <span class="token" @onclick='() => CopyToken("%TrackPAifClEnclosedShort[]%")'>%TrackPAifClEnclosedShort[]%</span>
+                </div>
+            </details>
+
+            <div class="template-section">
+                <div class="template-section-title">@Loc["settings.templates.section.playlist"]</div>
+                <div class="template-tokens">
+                    <span class="token" @onclick='() => CopyToken("%PlaylistID%")'>%PlaylistID%</span>
+                    <span class="token" @onclick='() => CopyToken("%PlaylistTitle%")'>%PlaylistTitle%</span>
+                    <span class="token" @onclick='() => CopyToken("%Format%")'>%Format%</span>
+                    <span class="token" @onclick='() => CopyToken("%FormatWithQuality%")'>%FormatWithQuality%</span>
+                    <span class="token" @onclick='() => CopyToken("%FormatWithHiResQuality%")'>%FormatWithHiResQuality%</span>
+                </div>
+            </div>
+
+            <div class="template-section">
+                <div class="template-section-title">@Loc["settings.templates.section.cd"]</div>
+                <div class="template-tokens">
+                    <span class="token" @onclick='() => CopyToken("%DiscNumber%")'>%DiscNumber%</span>
+                </div>
+            </div>
+
+            <div class="template-hint">@Loc["settings.templates.hint"]</div>
+        </div>
+    </details>
+</div>
+
+<!-- Tagging Options -->
+<div class="card">
+    <div class="card-title">@Loc["settings.tagging.title"]</div>
+    <div class="settings-grid">
+        <div class="setting-item"><input type="checkbox" @bind="S.AlbumTag" @bind:after="Save" /><label>@Loc["settings.tag.album"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.AlbumArtistTag" @bind:after="Save" /><label>@Loc["settings.tag.albumArtist"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.ArtistTag" @bind:after="Save" /><label>@Loc["settings.tag.artist"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.TrackTitleTag" @bind:after="Save" /><label>@Loc["settings.tag.trackTitle"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.TrackTag" @bind:after="Save" /><label>@Loc["settings.tag.trackNumber"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.TotalTracksTag" @bind:after="Save" /><label>@Loc["settings.tag.totalTracks"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.DiscTag" @bind:after="Save" /><label>@Loc["settings.tag.disc"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.TotalDiscsTag" @bind:after="Save" /><label>@Loc["settings.tag.totalDiscs"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.GenreTag" @bind:after="Save" /><label>@Loc["settings.tag.genre"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.YearTag" @bind:after="Save" /><label>@Loc["settings.tag.year"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.ReleaseDateTag" @bind:after="Save" /><label>@Loc["settings.tag.releaseDate"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.ComposerTag" @bind:after="Save" /><label>@Loc["settings.tag.composer"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.CopyrightTag" @bind:after="Save" /><label>@Loc["settings.tag.copyright"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.LabelTag" @bind:after="Save" /><label>@Loc["settings.tag.label"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.IsrcTag" @bind:after="Save" /><label>@Loc["settings.tag.isrc"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.UpcTag" @bind:after="Save" /><label>@Loc["settings.tag.upc"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.TypeTag" @bind:after="Save" /><label>@Loc["settings.tag.type"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.ExplicitTag" @bind:after="Save" /><label>@Loc["settings.tag.explicit"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.ImageTag" @bind:after="Save" /><label>@Loc["settings.tag.artwork"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.UrlTag" @bind:after="Save" /><label>@Loc["settings.tag.url"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.MergeArtistNames" @bind:after="Save" /><label>@Loc["settings.tag.mergeArtists"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.MergeArtistNamesInDirNames" @bind:after="Save" /><label>@Loc["settings.tag.mergeArtistsDirs"]</label></div>
+    </div>
+
+    <div style="margin-top:12px;">
+        <div class="setting-item"><input type="checkbox" @bind="S.CommentTag" @bind:after="Save" /><label>@Loc["settings.tag.comment"]</label></div>
+        @if (S.CommentTag)
+        {
+            <div class="form-group" style="margin-top:8px;">
+                <input type="text" @bind="S.CommentText" @bind:after="Save" placeholder='@Loc["settings.tag.commentPlaceholder"]' />
+            </div>
+        }
+    </div>
+
+    <div style="margin-top:12px;">
+        <div class="setting-item"><input type="checkbox" @bind="S.ExplicitTagInTitle" @bind:after="Save" /><label>@Loc["settings.tag.explicitInTitle"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.CleanTagInTitle" @bind:after="Save" /><label>@Loc["settings.tag.cleanInTitle"]</label></div>
+    </div>
+</div>
+
+<!-- Artwork -->
+<div class="card">
+    <div class="card-title">@Loc["settings.artwork.title"]</div>
+    <div class="settings-grid">
+        <div class="form-group">
+            <label>@Loc["settings.artwork.embedded"]</label>
+            <select @bind="S.EmbeddedArtSize" @bind:after="Save">
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="150">150</option>
+                <option value="230">230</option>
+                <option value="300">300</option>
+                <option value="600">600</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>@Loc["settings.artwork.saved"]</label>
+            <select @bind="S.SavedArtSize" @bind:after="Save">
+                <option value="50">50</option>
+                <option value="100">100</option>
+                <option value="150">150</option>
+                <option value="230">230</option>
+                <option value="300">300</option>
+                <option value="600">600</option>
+            </select>
+        </div>
+    </div>
+    <div class="setting-item"><input type="checkbox" @bind="S.DontSaveArtworkToDisk" @bind:after="Save" /><label>@Loc["settings.artwork.dontSave"]</label></div>
+</div>
+
+<!-- Advanced -->
+<div class="card">
+    <div class="card-title">@Loc["settings.advanced.title"]</div>
+    <div class="settings-grid">
+        <div class="setting-item"><input type="checkbox" @bind="S.StreamableCheck" @bind:after="Save" /><label>@Loc["settings.advanced.streamable"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.FixMD5s" @bind:after="Save" /><label>@Loc["settings.advanced.fixMd5"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.DownloadGoodies" @bind:after="Save" /><label>@Loc["settings.advanced.goodies"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.DownloadSpeed" @bind:after="Save" /><label>@Loc["settings.advanced.speed"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.UseItemPosInPlaylist" @bind:after="Save" /><label>@Loc["settings.advanced.playlistPos"]</label></div>
+        <div class="setting-item"><input type="checkbox" @bind="S.LogFailedDownloads" @bind:after="Save" /><label>@Loc["settings.advanced.logFailed"]</label></div>
+    </div>
+
+    <div class="form-group" style="margin-top:12px;">
+        <label>@Loc["settings.duplicates.label"]</label>
+        <select @bind="S.DuplicateFileMode" @bind:after="Save">
+            <option value="skip">@Loc["settings.duplicates.skip"]</option>
+            <option value="rename">@Loc["settings.duplicates.rename"]</option>
+            <option value="overwrite">@Loc["settings.duplicates.overwrite"]</option>
+        </select>
+    </div>
+</div>
+
+<!-- Mon compte -->
+<div class="card">
+    <div class="card-title">@Loc["settings.me.title"]</div>
+    <div class="form-group">
+        <label>@Loc["auth.username"]</label>
+        <div class="account-value">@Guard.Account?.Username</div>
+    </div>
+
+    @if (_pwdMessageKey != null)
+    {
+        <div class="@(_pwdOk ? "form-success" : "auth-error")">@Loc[_pwdMessageKey]</div>
+    }
+
+    @* Formulaire HTML classique, posté à /auth/password : le changement de mot de passe change
+       l'empreinte du cookie, que seule une vraie réponse HTTP peut réémettre. Le champ identifiant
+       caché permet au gestionnaire de mots de passe d'associer le nouveau mot de passe au compte. *@
+    <form method="post" action="/auth/password">
+        <input type="text" name="username" autocomplete="username" value="@Guard.Account?.Username" hidden />
+        <div class="settings-grid">
+            <div class="form-group">
+                <label for="pwd-current">@Loc["settings.me.current"]</label>
+                <input id="pwd-current" name="current" type="password" autocomplete="current-password" />
+            </div>
+            <div class="form-group">
+                <label for="pwd-new">@Loc["settings.me.new"]</label>
+                <input id="pwd-new" name="password" type="password" autocomplete="new-password" />
+            </div>
+            <div class="form-group">
+                <label for="pwd-confirm">@Loc["auth.confirm"]</label>
+                <input id="pwd-confirm" name="confirm" type="password" autocomplete="new-password" />
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:8px;">@Loc["settings.me.change"]</button>
+    </form>
+</div>
+
+@if (_showCopied)
+{
+    <div class="toast-notification">@Loc.T("settings.copied", _copiedToken)</div>
+}
+
+@code {
+    // S : réglages de téléchargement de l'utilisateur connecté. A : le compte Qobuz de l'instance,
+    // partagé par tous.
+    private UserSettings S => Guard.Settings;
+    private Models.AppSettings A => SettingsSvc.Settings;
+    private bool _showCopied;
+    private string _copiedToken = "";
+    private bool _refreshing;
+    private string _accountMessage = "";
+    private bool _confirmDisconnect;
+
+    // Résultat du changement de mot de passe, revenu par l'URL après le POST. Liste fermée : la
+    // valeur vient de la query.
+    private string? _pwdMessageKey;
+    private bool _pwdOk;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        var uri = Nav.ToAbsoluteUri(Nav.Uri);
+        if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("pwd", out var pwd))
+        {
+            _pwdMessageKey = pwd.ToString() switch
+            {
+                "ok" => "settings.me.pwd.ok",
+                "bad" => "settings.me.pwd.bad",
+                "mismatch" => "setup.error.mismatch",
+                "empty" => "users.error.emptyPassword",
+                "throttled" => "settings.me.pwd.throttled",
+                _ => null,
+            };
+            _pwdOk = pwd == "ok";
+        }
+    }
+
+    // Les réglages sont liés par @bind directement sur l'objet du compte : il ne reste qu'à écrire
+    // users.json.
+    private void Save() => Users.Save();
+
+    // ─── Compte ───
+
+    private static string Dash(string value) => string.IsNullOrWhiteSpace(value) ? "—" : value;
+
+    /// <summary>Date affichée dans la langue de l'interface. Contrairement aux noms de fichiers,
+    /// qui doivent rester en culture invariante, c'est bien ici le format local qui est attendu.</summary>
+    private static string FormatDate(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return "—";
+
+        return DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.None, out var d)
+            ? d.ToString("d", CultureInfo.CurrentCulture)
+            : raw;   // format inattendu : montrer la valeur brute plutôt que rien
+    }
+
+    private string StreamingRights
+    {
+        get
+        {
+            if (!A.HasSubscription) return Loc["settings.account.rights.none"];
+            if (A.CanStreamHires) return Loc["settings.account.rights.hires"];
+            if (A.CanStreamLossless) return Loc["settings.account.rights.lossless"];
+            return Loc["settings.account.rights.lossy"];
+        }
+    }
+
+    private async Task RefreshAccount()
+    {
+        _refreshing = true;
+        _accountMessage = "";
+
+        try
+        {
+            // Borné : sans cela le bouton resterait grisé jusqu'au délai par défaut de HttpClient,
+            // soit 100 s, sans que rien n'indique quoi que ce soit.
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var user = await Api.GetUserInfoAsync(A.AppId, A.UserAuthToken, timeout.Token);
+            if (user != null)
+            {
+                SettingsSvc.Update(s => s.ApplyAccountStatus(user));
+                _accountMessage = Loc["settings.account.refreshed"];
+
+                // Les droits sont revenus : relancer les files laissées en attente — celles de tous
+                // les utilisateurs, le compte étant partagé —, plutôt que d'obliger chacun à cliquer
+                // « relancer » élément par élément.
+                if (A.HasSubscription) Download.ResumeAfterSubscriptionBlock();
+            }
+        }
+        catch (Exception ex)
+        {
+            _accountMessage = Loc.T("settings.account.refreshFailed", ex.Message);
+        }
+        finally
+        {
+            _refreshing = false;
+        }
+    }
+
+    // Format Qobuz (5 = MP3 320, 6 = FLAC 16bit, 7 = FLAC 24bit <=96kHz, 27 = FLAC 24bit 192kHz)
+    // et extension du fichier produit, enregistrés ensemble pour rester cohérents.
+    private void SetQuality(string formatId, string audioFormat)
+    {
+        Users.Update(Guard.UserId, u => { u.Settings.QualityFormat = formatId; u.Settings.AudioFormat = audioFormat; });
+    }
+
+    /// <summary>
+    /// Ce que faisait autrefois « Déconnexion » dans la barre latérale. Celle-ci ne déconnecte plus
+    /// que de l'application : le compte Qobuz étant partagé, le vider couperait tout le monde.
+    /// </summary>
+    private void DisconnectQobuz()
+    {
+        // Revérifié ici : le bouton masqué ne suffit pas à interdire l'appel.
+        if (!Guard.IsAdmin) return;
+
+        SettingsSvc.Update(s => {
+            s.ClearAccount();
+            s.Email = "";
+            s.AppId = "";
+            s.AppSecret = "";
+        });
+        Api.SetCredentials("", "", "");
+        Nav.NavigateTo("/login", forceLoad: true);
+    }
+
+    private async Task CopyToken(string token)
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("copyToClipboard", token);
+        }
+        catch { }
+
+        _copiedToken = token;
+        _showCopied = true;
+        StateHasChanged();
+
+        await Task.Delay(1500);
+        _showCopied = false;
+        StateHasChanged();
+    }
+}

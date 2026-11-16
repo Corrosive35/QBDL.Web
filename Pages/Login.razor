@@ -1,0 +1,293 @@
+@page "/login"
+@inject QobuzApiService Api
+@inject SettingsService Settings
+@inject NavigationManager Nav
+@inject AppGuardService Guard
+@inject ILogger<Login> Logger
+@inherits LocalizedComponentBase
+
+<div class="auth-card">
+    <div class="card">
+        <div style="text-align:center;margin-bottom:20px;">
+            <h2 style="color:var(--accent);font-size:1.8em;">QBDL</h2>
+            <p style="color:var(--text-secondary);font-size:0.85em;">@Loc["login.subtitle"]</p>
+        </div>
+
+        @* Le compte Qobuz est celui de toute l'instance : seul un administrateur le connecte. Les
+           autres n'ont qu'à attendre — la reprise depuis le jeton enregistré, elle, vaut pour tous
+           (OnInitializedAsync). *@
+        @if (!Guard.IsAdmin)
+        {
+            <p class="auth-waiting">@Loc["login.waitAdmin"]</p>
+        }
+        else
+        {
+        <div class="qobuz-login-form">
+        @if (!string.IsNullOrEmpty(_error))
+        {
+            <div style="background:rgba(231,76,60,0.15);border:1px solid #c0392b;border-radius:6px;padding:10px;margin-bottom:12px;font-size:0.85em;color:#e74c3c;">
+                @_error
+            </div>
+        }
+
+        @if (_useToken)
+        {
+            <div class="form-group">
+                <label>@Loc["login.token"]</label>
+                <input type="password" @bind="_token" placeholder='@Loc["login.tokenPlaceholder"]' />
+            </div>
+        }
+        else
+        {
+            <div class="form-group">
+                <label>@Loc["login.email"]</label>
+                <input type="email" @bind="_email" placeholder='@Loc["login.emailPlaceholder"]' />
+            </div>
+            <div class="form-group">
+                <label>@Loc["login.password"]</label>
+                <input type="password" @bind="_password" placeholder='@Loc["login.passwordPlaceholder"]' />
+            </div>
+        }
+
+        <button class="btn btn-primary" style="width:100%;margin-top:8px;" @onclick="DoLogin" disabled="@_loading">
+            @(_loading ? Loc["login.submitting"] : Loc["login.submit"])
+        </button>
+
+        <div style="text-align:center;margin-top:12px;">
+            <button class="btn btn-sm btn-secondary" @onclick="() => _useToken = !_useToken">
+                @(_useToken ? Loc["login.useEmail"] : Loc["login.useToken"])
+            </button>
+        </div>
+
+        <details style="margin-top:16px;">
+            <summary style="color:var(--text-secondary);font-size:0.85em;cursor:pointer;">@Loc["login.customCredentials"]</summary>
+            <div style="margin-top:8px;">
+                <div class="form-group">
+                    <label>@Loc["login.appId"]</label>
+                    <input type="text" @bind="_customAppId" placeholder="App ID" />
+                </div>
+                <div class="form-group">
+                    <label>@Loc["login.appSecret"]</label>
+                    <input type="password" @bind="_customAppSecret" placeholder="App Secret" />
+                </div>
+            </div>
+        </details>
+        </div>
+        }
+    </div>
+</div>
+
+@code {
+    private string _email = "";
+    private string _password = "";
+    private string _token = "";
+    private string _customAppId = "";
+    private string _customAppSecret = "";
+    private string _error = "";
+    private bool _loading;
+    private bool _useToken;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        var s = Settings.Settings;
+        _email = s.Email;
+        _customAppId = s.AppId;
+        _customAppSecret = s.AppSecret;
+        _useToken = s.UseTokenLogin;
+    }
+
+    /// <summary>
+    /// Reconnexion depuis les réglages persistés, et relecture de la fiche du compte au passage.
+    /// Sans cette relecture, un abonnement arrivé à expiration passait inaperçu : le jeton restant
+    /// valide, l'application démarrait normalement et ne le découvrait qu'au premier téléchargement,
+    /// piste après piste.
+    ///
+    /// L'appel ne conditionne pas l'accès : si Qobuz est injoignable, on entre quand même avec le
+    /// dernier état connu. Une panne de leur côté ne doit pas fermer la porte.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        var s = Settings.Settings;
+
+        // Auto-login if token and secret are persisted
+        if (string.IsNullOrEmpty(s.UserAuthToken) || string.IsNullOrEmpty(s.AppId) || string.IsNullOrEmpty(s.AppSecret))
+            return;
+
+        Api.SetCredentials(s.AppId, s.AppSecret, s.UserAuthToken);
+
+        try
+        {
+            // Borné à 10 s : la page est prérendue côté serveur, cet appel retient donc le premier
+            // octet de la réponse HTTP. Avec le délai par défaut de HttpClient (100 s), une panne
+            // chez Qobuz afficherait une page blanche à chaque redémarrage du conteneur.
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            var user = await Api.GetUserInfoAsync(s.AppId, s.UserAuthToken, timeout.Token);
+            // user null = réponse illisible : ne pas écraser l'identité déjà connue par du vide.
+            if (user != null) Settings.Update(x => x.ApplyAccountStatus(user));
+        }
+        catch (Exception ex)
+        {
+            // Visible dans `docker logs`. ex.Message ne contient ni le jeton ni le secret : code HTTP et
+            // réponse d'erreur de Qobuz, ou cause de la panne réseau.
+            Logger.LogWarning("Qobuz account revalidation failed: {Type}: {Reason}", ex.GetType().Name, ex.Message);
+        }
+
+        Nav.NavigateTo("/", forceLoad: false);
+    }
+
+    private async Task DoLogin()
+    {
+        // Revérifié ici et pas seulement à l'affichage : le formulaire masqué ne suffit pas à
+        // interdire l'appel.
+        if (!Guard.IsAdmin) return;
+
+        _error = "";
+        _loading = true;
+        _loginApplied = false;
+
+        try
+        {
+            // Validate inputs early
+            if (_useToken)
+            {
+                if (string.IsNullOrWhiteSpace(_token)) { _error = Loc["login.error.noToken"]; return; }
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(_email)) { _error = Loc["login.error.noEmail"]; return; }
+                if (string.IsNullOrWhiteSpace(_password)) { _error = Loc["login.error.noPassword"]; return; }
+            }
+
+            bool hasCustomCredentials = !string.IsNullOrEmpty(_customAppId) && !string.IsNullOrEmpty(_customAppSecret);
+
+            if (hasCustomCredentials)
+            {
+                // User provided custom credentials — use them directly, no automatic resolution
+                await LoginWithCredentials(_customAppId, _customAppSecret);
+                return;
+            }
+
+            // Résolution automatique depuis le lecteur web : la seule voie hors identifiants
+            // personnalisés, aucun couple n'étant plus embarqué dans le code. Chaque échec est
+            // nommé à l'écran et journalisé, au lieu d'être avalé avant un repli silencieux.
+            string appId;
+            try
+            {
+                appId = await Api.GetAppIdAsync();
+            }
+            catch (Exception ex) when (!IsNetworkFailure(ex))
+            {
+                Logger.LogWarning("Automatic app_id resolution failed: {Type}: {Reason}", ex.GetType().Name, ex.Message);
+                _error = Loc["login.error.noAppCredentials"];
+                return;
+            }
+
+            _loginResult = await SignInAsync(appId);
+            if (_loginResult == null) return;   // jeton refusé : le message est déjà posé
+
+            string appSecret;
+            try
+            {
+                appSecret = await Api.GetAppSecretAsync(appId, _loginResult.UserAuthToken!);
+            }
+            catch (Exception ex) when (!IsNetworkFailure(ex))
+            {
+                Logger.LogWarning("Automatic app_secret resolution failed: {Type}: {Reason}", ex.GetType().Name, ex.Message);
+                _error = Loc["login.error.noAppCredentials"];
+                return;
+            }
+
+            ApplyLogin(appId, appSecret);
+        }
+        catch (Exception ex) when (IsNetworkFailure(ex))
+        {
+            Logger.LogWarning("Qobuz login failed, servers unreachable: {Type}: {Reason}", ex.GetType().Name, ex.Message);
+            _error = Loc["login.error.network"];
+        }
+        catch (Exception ex)
+        {
+            // ex.Message : code et motif HTTP, ou réponse d'erreur de Qobuz — jamais l'URL de
+            // user/login, qui porte le mot de passe, ni le jeton.
+            Logger.LogWarning("Qobuz login failed: {Type}: {Reason}", ex.GetType().Name, ex.Message);
+            _error = ex.Message.Contains("401") || ex.Message.Contains("Invalid")
+                ? Loc["login.error.invalidCredentials"]
+                : Loc.T("login.error.generic", ex.Message);
+        }
+        finally
+        {
+            // Échec, quelle qu'en soit l'étape : la tentative a pu laisser en mémoire un app_id, un
+            // jeton refusé (LoginWithTokenAsync le retient avant de le vérifier) ou un jeton sans
+            // secret. QobuzApiService étant partagé, l'application paraîtrait alors connectée pour
+            // tous au rechargement suivant, avec des identifiants inutilisables. Retour au dernier
+            // état valide, celui de settings.json — vide sur une installation neuve.
+            if (!_loginApplied)
+            {
+                var saved = Settings.Settings;
+                Api.SetCredentials(saved.AppId, saved.AppSecret, saved.UserAuthToken);
+            }
+            _loading = false;
+        }
+    }
+
+    // Panne réseau : aucune réponse HTTP (DNS, connexion, TLS) ou délai dépassé. Une
+    // HttpRequestException *portant* un code HTTP vient au contraire d'une réponse de Qobuz — un
+    // mauvais mot de passe (401) ne doit pas s'afficher comme « serveurs injoignables ».
+    private static bool IsNetworkFailure(Exception ex) =>
+        ex is HttpRequestException { StatusCode: null } or TaskCanceledException;
+
+    /// <summary>
+    /// Connexion au compte Qobuz sous l'app_id donné. Un jeton n'est accepté qu'avec l'app_id sous
+    /// lequel il a été émis ; quand user/get le refuse (4xx), Qobuz ne dit pas s'il est invalide,
+    /// expiré ou émis pour une autre application — le message n'en écarte donc aucune.
+    /// Renvoie null une fois le message d'erreur posé.
+    /// </summary>
+    private async Task<Models.QobuzLoginResponse?> SignInAsync(string appId)
+    {
+        if (!_useToken)
+            return await Api.LoginWithEmailAsync(appId, _email, _password);
+
+        try
+        {
+            return await Api.LoginWithTokenAsync(appId, _token);
+        }
+        catch (HttpRequestException ex) when ((int?)ex.StatusCode is >= 400 and < 500)
+        {
+            Logger.LogWarning("Qobuz rejected the token for app_id {AppId} (HTTP {Status})", appId, (int)ex.StatusCode!.Value);
+            _error = Loc["login.error.tokenRejected"];
+            return null;
+        }
+    }
+
+    private async Task LoginWithCredentials(string appId, string appSecret)
+    {
+        _loginResult = await SignInAsync(appId);
+        if (_loginResult == null) return;
+        ApplyLogin(appId, appSecret);
+    }
+
+    private void ApplyLogin(string appId, string appSecret)
+    {
+        var result = _loginResult!;
+        Api.SetCredentials(appId, appSecret, result.UserAuthToken!);
+        _loginApplied = true;
+
+        Settings.Update(s => {
+            s.AppId = appId;
+            s.AppSecret = appSecret;
+            s.UserAuthToken = result.UserAuthToken!;
+            s.Email = _useToken ? "" : _email;
+            s.UseTokenLogin = _useToken;
+            // Identité et état de l'abonnement : même code que la revalidation au démarrage, pour
+            // que les deux chemins ne puissent pas diverger.
+            s.ApplyAccountStatus(result.User);
+        });
+
+        Nav.NavigateTo("/", forceLoad: true);
+    }
+
+    private Models.QobuzLoginResponse? _loginResult;
+    // Posé par ApplyLogin : sans lui, DoLogin rétablit les identifiants enregistrés en sortant.
+    private bool _loginApplied;
+}

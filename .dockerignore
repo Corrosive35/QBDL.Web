@@ -1,0 +1,8 @@
+bin/
+obj/
+downloads/
+config/
+*.md
+.git
+.vs
+screenshots/

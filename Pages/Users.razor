@@ -1,0 +1,256 @@
+@page "/users"
+@* « Accounts » et non « Users » : la classe générée pour cette page s'appelle déjà Users, et un
+   membre ne peut pas porter le nom de son type. *@
+@inject UserStore Accounts
+@inject AppGuardService Guard
+@inject DownloadService Download
+@inject SearchStateStore SearchStates
+@inject NavigationManager Nav
+@inherits LocalizedComponentBase
+
+@* Réservée aux administrateurs. Le lien n'apparaît que pour eux, mais c'est ici — au chargement et
+   dans chaque action — que le droit est réellement vérifié : une URL se tape à la main. *@
+@if (Guard.IsAdmin)
+{
+<div class="users-page">
+    <h3 style="margin-bottom:16px;">@Loc["users.title"]</h3>
+
+    @if (_message != null)
+    {
+        <div class="@(_messageIsError ? "auth-error" : "form-success")">@_message</div>
+    }
+
+    <!-- Création -->
+    <div class="card">
+        <div class="card-title">@Loc["users.create.title"]</div>
+        <div class="settings-grid">
+            <div class="form-group">
+                <label for="new-username">@Loc["auth.username"]</label>
+                <input id="new-username" type="text" autocomplete="off" autocapitalize="none" spellcheck="false"
+                       @bind="_newName" @bind:event="oninput" @bind:after="OnNewNameChanged" />
+            </div>
+            <div class="form-group">
+                <label for="new-password">@Loc["users.initialPassword"]</label>
+                <input id="new-password" type="password" autocomplete="new-password" @bind="_newPassword" />
+            </div>
+            <div class="form-group">
+                <label for="new-folder">@Loc["settings.folder.location"]</label>
+                <input id="new-folder" type="text" spellcheck="false"
+                       @bind="_newFolder" @bind:event="oninput" @bind:after="OnNewFolderEdited" />
+            </div>
+        </div>
+        <div class="setting-item">
+            <input id="new-admin" type="checkbox" @bind="_newIsAdmin" />
+            <label for="new-admin">@Loc["users.role.adminCheckbox"]</label>
+        </div>
+        <button class="btn btn-primary" style="margin-top:12px;" @onclick="CreateUser">@Loc["users.create.submit"]</button>
+    </div>
+
+    <!-- Liste -->
+    <div class="card">
+        <div class="card-title">@Loc["users.list.title"]</div>
+        <div class="users-list">
+            @foreach (var u in Accounts.All())
+            {
+                <div class="user-row" @key="u.Id">
+                    @if (_editingId == u.Id)
+                    {
+                        <div class="user-edit">
+                            <div class="settings-grid">
+                                <div class="form-group">
+                                    <label>@Loc["auth.username"]</label>
+                                    <input type="text" autocomplete="off" autocapitalize="none" spellcheck="false" @bind="_editName" />
+                                </div>
+                                <div class="form-group">
+                                    <label>@Loc["settings.folder.location"]</label>
+                                    <input type="text" spellcheck="false" @bind="_editFolder" />
+                                </div>
+                                @* Son propre mot de passe se change depuis les Paramètres : changé ici, il
+                                   invaliderait le cookie de l'appareil même qui le modifie. *@
+                                @if (u.Id != _me)
+                                {
+                                    <div class="form-group">
+                                        <label>@Loc["users.resetPassword"]</label>
+                                        <input type="password" autocomplete="new-password" placeholder='@Loc["users.resetPasswordPlaceholder"]' @bind="_editPassword" />
+                                    </div>
+                                }
+                            </div>
+                            <div class="setting-item">
+                                <input id="edit-admin" type="checkbox" @bind="_editIsAdmin" />
+                                <label for="edit-admin">@Loc["users.role.adminCheckbox"]</label>
+                            </div>
+                            <div class="user-actions" style="margin-top:10px;">
+                                <button class="btn btn-primary btn-sm" @onclick="SaveEdit">@Loc["common.save"]</button>
+                                <button class="btn btn-secondary btn-sm" @onclick="CancelEdit">@Loc["common.cancel"]</button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="user-info">
+                            <div class="title">
+                                @u.Username
+                                <span class="user-role @(u.IsAdmin ? "admin" : "")">@(Loc[u.IsAdmin ? "users.role.admin" : "users.role.user"])</span>
+                                @if (u.Id == _me)
+                                {
+                                    <span class="user-self">@Loc["users.you"]</span>
+                                }
+                            </div>
+                            <div class="sub">@u.Settings.DownloadLocation</div>
+                        </div>
+                        <div class="user-actions">
+                            @if (_confirmDeleteId == u.Id)
+                            {
+                                <button class="btn btn-danger btn-sm" @onclick="() => DeleteUser(u.Id)">@Loc["users.deleteConfirm"]</button>
+                                <button class="btn btn-secondary btn-sm" @onclick="() => _confirmDeleteId = null">@Loc["common.cancel"]</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-secondary btn-sm" @onclick="() => StartEdit(u)">@Loc["users.edit"]</button>
+                                @* On ne se supprime pas soi-même : il faut qu'un autre administrateur s'en charge. *@
+                                <button class="btn btn-danger btn-sm" @onclick="() => AskDelete(u.Id)" disabled="@(u.Id == _me)">@Loc["users.delete"]</button>
+                            }
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+        <div style="font-size:0.8em;color:var(--text-secondary);margin-top:10px;">@Loc["users.deleteHint"]</div>
+    </div>
+</div>
+}
+
+@code {
+    private string _me = "";
+
+    private string _newName = "";
+    private string _newPassword = "";
+    private string _newFolder = "";
+    private bool _newIsAdmin;
+    // Tant que l'administrateur n'a pas touché au dossier, il suit l'identifiant saisi.
+    private bool _newFolderTouched;
+
+    private string? _editingId;
+    private string _editName = "";
+    private string _editFolder = "";
+    private string _editPassword = "";
+    private bool _editIsAdmin;
+
+    private string? _confirmDeleteId;
+
+    private string? _message;
+    private bool _messageIsError;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        _me = Guard.UserId;
+        if (!Guard.IsAdmin) Nav.NavigateTo("/");
+    }
+
+    private void OnNewNameChanged()
+    {
+        if (!_newFolderTouched)
+            _newFolder = string.IsNullOrWhiteSpace(_newName) ? "" : UserStore.DefaultFolderFor(_newName);
+    }
+
+    private void OnNewFolderEdited() => _newFolderTouched = true;
+
+    private void CreateUser()
+    {
+        if (!Guard.IsAdmin) return;
+
+        var (user, error) = Accounts.Create(_newName, _newPassword, _newIsAdmin, _newFolder);
+        if (user == null)
+        {
+            Show(Loc[error!], isError: true);
+            return;
+        }
+
+        Show(Loc.T("users.created", user.Username), isError: false);
+        _newName = "";
+        _newPassword = "";
+        _newFolder = "";
+        _newIsAdmin = false;
+        _newFolderTouched = false;
+    }
+
+    private void StartEdit(UserAccount u)
+    {
+        _editingId = u.Id;
+        _editName = u.Username;
+        _editFolder = u.Settings.DownloadLocation;
+        _editIsAdmin = u.IsAdmin;
+        _editPassword = "";
+        _confirmDeleteId = null;
+        _message = null;
+    }
+
+    private void CancelEdit()
+    {
+        _editingId = null;
+        _editPassword = "";
+    }
+
+    private void SaveEdit()
+    {
+        if (!Guard.IsAdmin || _editingId == null) return;
+        var id = _editingId;
+
+        // Le dossier est vérifié avant toute écriture : c'est l'erreur la plus probable, et l'arrêt
+        // à mi-chemin laisserait le compte à moitié modifié. Le rôle passe ensuite, seule autre
+        // étape susceptible d'échouer (dernier administrateur).
+        var error = Accounts.NormalizeFolder(_editFolder, out _)
+                    ?? Accounts.SetAdmin(id, _editIsAdmin)
+                    ?? Accounts.Rename(id, _editName)
+                    ?? Accounts.SetFolder(id, _editFolder)
+                    ?? (id != _me && !string.IsNullOrEmpty(_editPassword) ? Accounts.SetPassword(id, _editPassword) : null);
+
+        if (error != null)
+        {
+            Show(Loc[error], isError: true);
+            return;
+        }
+
+        _editingId = null;
+        _editPassword = "";
+        Show(Loc["users.saved"], isError: false);
+
+        // S'être retiré soi-même le rôle d'administrateur ferme cette page.
+        if (!Guard.IsAdmin) Nav.NavigateTo("/");
+    }
+
+    private void AskDelete(string id)
+    {
+        _confirmDeleteId = id;
+        _editingId = null;
+        _message = null;
+    }
+
+    private void DeleteUser(string id)
+    {
+        if (!Guard.IsAdmin) return;
+
+        var name = Accounts.Find(id)?.Username ?? "";
+        var error = Accounts.Delete(_me, id);
+        _confirmDeleteId = null;
+        if (error != null)
+        {
+            Show(Loc[error], isError: true);
+            return;
+        }
+
+        // Ses fichiers restent sur le disque. Sa file, elle, n'a plus de propriétaire : l'élément en
+        // cours est annulé, les autres retirés. Ses circuits ouverts se verrouillent au rendu suivant,
+        // ses cookies sont refusés à la requête suivante.
+        Download.RemoveAllFor(id);
+        SearchStates.Remove(id);
+        Show(Loc.T("users.deleted", name), isError: false);
+    }
+
+    private void Show(string message, bool isError)
+    {
+        _message = message;
+        _messageIsError = isError;
+    }
+}
