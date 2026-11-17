@@ -44,9 +44,11 @@ A self-hosted web application for downloading high-quality music from Qobuz. Bui
 
 ## Screenshots
 
-| Downloader | Search | Settings |
-|:---:|:---:|:---:|
-| ![Downloader](screenshots/downloader.png) | ![Search](screenshots/search.png) | ![Settings](screenshots/settings.png) |
+| Downloader | Search |
+|:---:|:---:|
+| ![Downloader](screenshots/downloader.png) | ![Search](screenshots/search.png) |
+| **Settings** | **Users** |
+| ![Settings](screenshots/settings.png) | ![Users](screenshots/users.png) |
 
 ---
 
