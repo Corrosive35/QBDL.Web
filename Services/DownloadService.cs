@@ -60,6 +60,14 @@ public class DownloadProgress
 
     public QobuzAlbum? CurrentAlbum { get; set; }
 
+    /// <summary>
+    /// Piste en cours (base 0) et nombre de pistes, pendant le téléchargement des pistes d'un album
+    /// ou d'une playlist : la page Téléchargement en tire un segment par piste. Steps vaut 0 dans
+    /// tous les autres cas (discographie, favoris…), et la page affiche alors une simple barre.
+    /// </summary>
+    public int Step { get; set; }
+    public int Steps { get; set; }
+
     /// <summary>Identifiant de l'élément en cours, pour surligner sa ligne sans comparer de libellé.</summary>
     public string? CurrentQueueItemId { get; set; }
 }
@@ -716,10 +724,14 @@ public class DownloadService
 
     private void Log(ItemRun run, string msg) => Log(run.Lane.OwnerId, msg);
 
-    private void UpdateProgress(ItemRun run, int percent, string status, string currentItem = "")
+    private void UpdateProgress(ItemRun run, int percent, string status, string currentItem = "", int step = 0, int steps = 0)
     {
         run.Progress.Percent = percent;
         run.Progress.Status = status;
+        // Remis à zéro par tout appel qui ne parle pas de pistes : des segments restés d'un album
+        // précédent ne doivent pas s'afficher sous une discographie.
+        run.Progress.Step = step;
+        run.Progress.Steps = steps;
         if (!string.IsNullOrEmpty(currentItem)) run.Progress.CurrentItem = currentItem;
         RaiseProgress(run.Lane, force: true);
     }
@@ -952,7 +964,7 @@ public class DownloadService
             if (run.Lane.SkipCurrent) { run.Lane.SkipCurrent = false; Log(run, run.L["log.albumSkipped"]); break; }
 
             var track = tracks[i];
-            UpdateProgress(run, (int)((double)i / total * 100), run.L.T("download.status.track", i + 1, total), _templates.FormatTrackTitle(track));
+            UpdateProgress(run, (int)((double)i / total * 100), run.L.T("download.status.track", i + 1, total), _templates.FormatTrackTitle(track), step: i, steps: total);
 
             try
             {
@@ -1017,7 +1029,7 @@ public class DownloadService
         {
             run.Ct.ThrowIfCancellationRequested();
             var item = tracks[i];
-            UpdateProgress(run, (int)((double)i / total * 100), run.L.T("download.status.track", i + 1, total));
+            UpdateProgress(run, (int)((double)i / total * 100), run.L.T("download.status.track", i + 1, total), step: i, steps: total);
 
             try
             {

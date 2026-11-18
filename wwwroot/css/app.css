@@ -1238,134 +1238,316 @@ select option { background: var(--t2-nuit); color: var(--t2-texte); }
     font-style: italic;
 }
 
-/* ──────────────────────────────────────────────────────────────────────────
-   File d'attente de téléchargement
-
-   Styles de transition, en attendant la refonte de la page (étape 3).
-   ────────────────────────────────────────────────────────────────────────── */
-
-.queue-toolbar { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-
-.queue-count {
-    color: var(--text-primary);
-    background: var(--bg-card);
-    border-radius: 10px;
-    padding: 2px 8px;
-    letter-spacing: 0;
-    text-transform: none;
-}
-
-.queue-list { display: flex; flex-direction: column; }
-
-.queue-empty {
-    color: var(--text-secondary);
-    font-size: 0.85em;
-    font-style: italic;
-    padding: 6px 2px;
-}
-
-.queue-row {
-    display: flex;
+/* ── Commandes communes ─────────────────────────────────────────────────────── */
+/* Lien d'action souligné (« Effacer le journal », « En lot »…). */
+.lnk {
+    min-height: var(--t2-cible);
+    display: inline-flex;
     align-items: center;
-    gap: 12px;
-    padding: 8px 6px;
-    border-bottom: 1px solid var(--border);
-    border-left: 3px solid transparent;
-}
-
-.queue-row:last-child { border-bottom: none; }
-
-.queue-row.running { background: var(--t2-survol); border-left-color: var(--t2-texte); }
-.queue-row.done { opacity: 0.6; }
-.queue-row.failed { border-left-color: var(--t2-texte); border-left-style: dashed; }
-.queue-row.cancelled { opacity: 0.6; border-left-color: var(--t2-texte-2); }
-
-.queue-row img,
-.queue-thumb-placeholder {
-    width: 40px;
-    height: 40px;
-    border-radius: 4px;
-    flex-shrink: 0;
-    object-fit: cover;
-}
-
-.queue-thumb-placeholder {
-    background: var(--bg-card);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.6em;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: var(--text-secondary);
-    text-align: center;
-    padding: 2px;
-    overflow: hidden;
-}
-
-/* min-width:0 : sans lui, un élément flex refuse de descendre sous la largeur de son contenu et
-   l'ellipse ne se déclenche jamais. */
-.queue-info { flex: 1; min-width: 0; }
-
-.queue-info .title,
-.queue-info .sub {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.queue-info .title { font-weight: 600; font-size: 0.9em; }
-.queue-info .sub { color: var(--text-secondary); font-size: 0.8em; }
-.queue-info .err { color: var(--t2-texte); font-size: 0.75em; font-style: italic; }
-
-.queue-status {
-    flex-shrink: 0;
-    font-size: 0.7em;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 3px 8px;
-    border-radius: 10px;
-    background: var(--bg-card);
-    color: var(--text-secondary);
-    white-space: nowrap;
-}
-
-/* La forme porte l'état : plein = en cours, verre = terminé, contour = échec. */
-.queue-status.running { background: var(--t2-action); color: var(--t2-action-texte); }
-.queue-status.done { background: var(--t2-verre-fort); color: var(--t2-texte); }
-.queue-status.failed { background: transparent; color: var(--t2-texte); box-shadow: inset 0 0 0 1.5px var(--t2-texte); }
-
-.queue-actions { display: flex; gap: 6px; flex-shrink: 0; }
-
-.queue-btn {
-    width: 30px;
-    height: 30px;
+    gap: 6px;
     padding: 0;
+    border: none;
+    background: none;
+    color: var(--t2-texte);
+    font: 600 14px var(--t2-texte-police);
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 255, 255, .4);
+    text-underline-offset: 5px;
+    cursor: pointer;
+}
+
+.lnk:hover { text-decoration-color: var(--t2-texte); }
+
+/* Bouton rond à icône seule : son nom accessible est porté par aria-label. */
+.ic {
+    width: var(--t2-cible);
+    height: var(--t2-cible);
+    flex-shrink: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: var(--t2-verre);
-    color: var(--t2-texte);
+    padding: 0;
     border: none;
     border-radius: 50%;
+    background: none;
+    color: var(--t2-texte-2);
     cursor: pointer;
-    font-size: 0.85em;
-    line-height: 1;
-    transition: background 0.2s;
 }
 
-.queue-btn:hover:not(:disabled) { background: var(--t2-verre-fort); }
-.queue-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.queue-btn.danger:hover:not(:disabled) { background: transparent; box-shadow: inset 0 0 0 1.5px var(--t2-texte); }
+.ic:hover:not(:disabled) { background: var(--t2-verre); color: var(--t2-texte); }
+.ic:disabled { opacity: .3; cursor: not-allowed; }
+.ic .nav-icon { width: 20px; height: 20px; }
 
-/* Marque « déjà téléchargé » en page Recherche. Toujours posée en FRÈRE du bouton, jamais en
-   enfant : à l'intérieur, la règle ::before du palier 640px l'avalerait. */
-.queue-done-mark {
+.btn .nav-icon { width: 18px; height: 18px; }
+
+/* Badges d'état : la forme porte le sens, pas la couleur. */
+.bdg {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: var(--t2-rayon-pilule);
+    font: 650 11.5px/1 var(--t2-texte-police);
+    white-space: nowrap;
     color: var(--t2-texte);
-    font-size: 0.95em;
-    flex-shrink: 0;
-    line-height: 1;
 }
+
+.bdg i { width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: currentColor; }
+.bdg.run { background: var(--t2-action); color: var(--t2-action-texte); }
+.bdg.pen { background: var(--t2-verre); box-shadow: var(--t2-reflet); }
+.bdg.pen i { background: transparent; box-shadow: inset 0 0 0 1.5px currentColor; }
+.bdg.ok { background: var(--t2-verre); box-shadow: var(--t2-reflet); }
+.bdg.ko { box-shadow: inset 0 0 0 1.5px var(--t2-texte); }
+.bdg.ann { color: var(--t2-texte-2); text-decoration: line-through; text-decoration-thickness: 1px; }
+.bdg.ann i { background: transparent; box-shadow: inset 0 0 0 1.5px currentColor; }
+
+/* En-tête de section : titre Syne, compteur, liens d'action à droite. */
+.section-head {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 16px;
+    padding-bottom: 10px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--t2-filet);
+}
+
+.section-title { font: 800 28px/1 var(--t2-titre); letter-spacing: -.03em; }
+.section-count { font-size: 13px; color: var(--t2-texte-2); }
+.section-tools { margin-left: auto; display: flex; flex-wrap: wrap; gap: 4px 18px; }
+
+/* ── Téléchargement ───────────────────────────────────────────────────────── */
+.dl-quality { margin-bottom: 18px; font-size: 14px; color: var(--t2-texte-2); }
+.dl-quality strong { color: var(--t2-texte); }
+.dl-quality .lnk { min-height: 0; font-size: 14px; }
+
+/* Champ URL : pilule de verre qui porte « En lot » et « Télécharger ». */
+.url-field {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 60px;
+    padding: 8px 8px 8px 22px;
+    border-radius: 30px;
+    background: var(--t2-verre);
+    -webkit-backdrop-filter: blur(var(--t2-verre-flou)) saturate(1.4);
+    backdrop-filter: blur(var(--t2-verre-flou)) saturate(1.4);
+    box-shadow: var(--t2-reflet);
+}
+
+.url-field:focus-within { box-shadow: var(--t2-reflet), inset 0 0 0 1.5px var(--t2-texte); }
+
+.url-field input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+}
+
+.url-field input[type="text"]:focus,
+.url-field input[type="text"]:focus-visible { border: none; box-shadow: none; }
+
+.url-field .btn { min-height: var(--t2-cible); }
+
+.batch-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.batch-panel textarea { resize: vertical; }
+
+/* Carte « En cours » : la pochette, le disque qui en sort, puis titre, pourcentage et segments.
+   --sortie fixe la taille de la pochette ; tout le reste en découle. */
+.now-panel {
+    --sortie: 200px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 28px 44px;
+    align-items: start;
+    margin: 32px 0 40px;
+}
+
+.sortie { position: relative; width: calc(var(--sortie) * 1.48); height: var(--sortie); }
+
+.sortie-pochette {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: var(--sortie);
+    height: var(--sortie);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--t2-verre);
+    box-shadow: 14px 0 30px -10px rgba(0, 0, 0, .9), 0 0 0 1px rgba(255, 255, 255, .08);
+}
+
+.sortie-disque {
+    position: absolute;
+    left: calc(var(--sortie) * .52);
+    top: calc(var(--sortie) * .04);
+    width: calc(var(--sortie) * .92);
+    height: calc(var(--sortie) * .92);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: repeating-radial-gradient(circle, #141418 0 1.2px, #1E1E24 1.2px 2.6px);
+    box-shadow: 0 24px 40px -18px rgba(0, 0, 0, .95), inset 0 0 0 1px rgba(255, 255, 255, .06);
+}
+
+/* Reflets fixes : ils restent en place pendant que le disque tourne dessous. */
+.sortie-disque::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(from 210deg, rgba(255, 255, 255, 0) 0 20%, rgba(255, 255, 255, .10) 26%, rgba(255, 255, 255, 0) 32% 70%, rgba(255, 255, 255, .07) 76%, rgba(255, 255, 255, 0) 82%);
+}
+
+.sortie-etiquette {
+    position: relative;
+    z-index: 1;
+    width: calc(var(--sortie) * .31);
+    height: calc(var(--sortie) * .31);
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--t2-verre-fort);
+}
+
+.sortie-pochette img,
+.sortie-etiquette img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+.sortie-trou {
+    position: absolute;
+    z-index: 2;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--t2-nuit);
+}
+
+@keyframes t2-tour { to { transform: rotate(360deg); } }
+.sortie-disque.tourne .sortie-etiquette { animation: t2-tour 1.8s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+    .sortie-disque.tourne .sortie-etiquette { animation: none; }
+}
+
+.now-info { min-width: 0; display: flex; flex-direction: column; }
+
+.now-cap {
+    font: 600 10.5px/1 var(--t2-texte-police);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--t2-texte-2);
+}
+
+.now-title {
+    margin-top: 12px;
+    font: 800 clamp(30px, 3.6vw, 52px)/.95 var(--t2-titre);
+    letter-spacing: -.035em;
+    overflow-wrap: anywhere;
+}
+
+.now-artist { margin-top: 10px; font-size: 17px; }
+.now-meta { margin-top: 6px; font-size: 13.5px; color: var(--t2-texte-2); }
+.now-meta strong { color: var(--t2-texte); }
+
+.now-pct {
+    align-self: flex-end;
+    margin-top: -8px;
+    font: 800 clamp(56px, 7vw, 104px)/.85 var(--t2-titre);
+    letter-spacing: -.04em;
+}
+
+.now-pct small { font-size: .32em; letter-spacing: 0; }
+
+.now-progress { margin-top: 16px; }
+
+/* Un segment par piste : plein = téléchargée, à moitié = en cours. */
+.seg { display: grid; gap: 4px; }
+.seg i { height: 6px; border-radius: 3px; background: var(--t2-piste); }
+.seg i.d { background: var(--t2-action); }
+.seg i.c { background: linear-gradient(90deg, var(--t2-action) 50%, var(--t2-piste) 50%); }
+
+.now-bar { height: 6px; border-radius: 3px; background: var(--t2-piste); overflow: hidden; }
+.now-bar i { display: block; height: 100%; border-radius: 3px; background: var(--t2-action); transition: width .3s ease; }
+
+.now-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    margin-top: 12px;
+    font-size: 13.5px;
+}
+
+.now-item { color: var(--t2-texte-2); min-width: 0; overflow-wrap: anywhere; }
+.now-speed { margin-left: auto; color: var(--t2-texte-2); }
+
+.now-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+
+/* File et journal côte à côte quand la place le permet. */
+.dl-columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: 36px; }
+
+@media (min-width: 1200px) {
+    .dl-columns { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
+}
+
+.queue-list { display: flex; flex-direction: column; }
+.queue-empty { padding: 14px 2px; font-size: 14px; color: var(--t2-texte-2); }
+
+.qrow {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+    column-gap: 14px;
+    align-items: center;
+    min-height: 68px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--t2-filet);
+}
+
+.qrow:last-child { border-bottom: none; }
+.qrow.done,
+.qrow.cancelled { opacity: .7; }
+
+.qrow-thumb {
+    display: block;
+    width: 52px;
+    height: 52px;
+    border-radius: var(--t2-rayon-vignette);
+    object-fit: cover;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .08);
+}
+
+/* Sans pochette (artiste, label…) : le genre de l'élément tient lieu d'image. */
+.qrow-thumb-empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    overflow: hidden;
+    background: var(--t2-verre);
+    font: 600 9px/1.1 var(--t2-texte-police);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--t2-texte-2);
+}
+
+.qrow-text { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; }
+.qrow-text .bdg { margin-top: 6px; }
+.qrow-err { margin-top: 4px; font-size: 12.5px; font-style: italic; overflow-wrap: anywhere; }
+
+.qrow-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+
+.dl-log .log-output { margin-top: 10px; max-height: 420px; }
+.log-empty { color: var(--t2-texte-2); }
 
 /* Toast notification */
 .toast-notification {
@@ -1507,10 +1689,20 @@ select option { background: var(--t2-nuit); color: var(--t2-texte); }
     .album-info img { width: 80px; height: 80px; }
     .album-details h3 { font-size: 1.05em; }
 
-    .queue-row { gap: 8px; padding: 8px 4px; }
-    .queue-row img,
-    .queue-thumb-placeholder { width: 34px; height: 34px; }
-    .queue-status { font-size: 0.62em; padding: 2px 6px; }
+    /* Carte « En cours » empilée : le disque au-dessus, centré. */
+    .now-panel { grid-template-columns: minmax(0, 1fr); margin: 24px 0 32px; }
+    .now-panel .sortie { justify-self: center; }
+    .now-pct { align-self: flex-start; margin-top: 16px; }
+
+    /* Le champ prend la ligne, « En lot » et « Télécharger » se partagent la suivante. */
+    .url-field { flex-wrap: wrap; padding: 8px 8px 8px 18px; border-radius: 26px; }
+    .url-field input[type="text"] { flex: 1 1 100%; min-height: var(--t2-cible); }
+    .url-field .btn { flex: 1 1 auto; }
+    .url-field-batch { padding: 0 8px; }
+
+    .qrow { column-gap: 10px; }
+    .qrow-thumb { width: 44px; height: 44px; }
+    .qrow { grid-template-columns: 44px minmax(0, 1fr) auto; }
 }
 
 @media (max-width: 480px) {
@@ -1532,27 +1724,25 @@ select option { background: var(--t2-nuit); color: var(--t2-texte); }
         text-align: center;
     }
 
-    /* Les actions passent sur leur propre ligne : trois boutons de 30px tiennent alors même à
-       320px, alors qu'en ligne ils comprimeraient le libellé jusqu'à l'illisible. */
-    .queue-row { flex-wrap: wrap; }
-    .queue-actions { flex: 1 1 100%; justify-content: flex-end; }
-    .queue-toolbar { margin-left: 0; flex: 1 1 100%; }
-    .queue-toolbar .btn { flex: 1 1 auto; }
+    /* Les actions passent sous le texte : trois boutons de 44px tiennent alors même à 320px,
+       alors qu'en ligne ils comprimeraient le libellé jusqu'à l'illisible. */
+    .qrow { grid-template-columns: 44px minmax(0, 1fr); row-gap: 4px; }
+    .qrow-actions { grid-column: 2; justify-content: flex-end; }
+    .section-tools { margin-left: 0; flex: 1 1 100%; }
 }
 
 /* Écrans tactiles : cibles élargies et surbrillances de survol neutralisées — sur mobile un
    :hover reste « collé » après un tap. */
 @media (hover: none) {
     .btn { min-height: var(--t2-cible); }
-    .queue-btn { width: var(--t2-cible); height: var(--t2-cible); }
     .token { padding: 6px 10px; }
 
     .btn-primary:hover:not(:disabled) { background: var(--t2-action); }
     .btn-secondary:hover:not(:disabled) { background: var(--t2-verre); }
     .btn-danger:hover:not(:disabled),
     .btn-outline:hover:not(:disabled) { background: transparent; }
-    .queue-btn:hover:not(:disabled) { background: var(--t2-verre); }
-    .queue-btn.danger:hover:not(:disabled) { background: var(--t2-verre); box-shadow: none; }
+    .ic:hover:not(:disabled) { background: none; color: var(--t2-texte-2); }
+    .lnk:hover { text-decoration-color: rgba(255, 255, 255, .4); }
     .alb-caps button:hover:not(:disabled),
     .alb.is-sel .alb-caps button:hover:not(:disabled) { background: none; }
     .nav-link:hover { background: none; color: var(--t2-texte-2); }
@@ -1642,4 +1832,9 @@ select option { background: var(--t2-nuit); color: var(--t2-texte); }
 
 @media (prefers-reduced-motion: reduce) {
     .reconnect-spinner { animation-duration: 2.4s; }
+}
+
+/* Grands écrans : la carte « En cours » prend l'ampleur des maquettes bureau. */
+@media (min-width: 1200px) {
+    .now-panel { --sortie: 300px; }
 }
