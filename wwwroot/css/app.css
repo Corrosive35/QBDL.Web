@@ -115,9 +115,29 @@ button, input, select, textarea { font-family: inherit; }
 
 h1, h2, h3 { font-family: var(--t2-titre); letter-spacing: -.02em; }
 
-:where(a, button, input, select, textarea, summary):focus-visible {
-    outline: none;
-    box-shadow: var(--t2-focus);
+/* Focus clavier : un contour blanc décalé, et non une ombre, pour ne pas être écrasé par les
+   box-shadow (reflets, contours) que portent la plupart des boutons. Les champs ont leur propre
+   bordure de focus. */
+:is(a, button, select, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--t2-texte);
+    outline-offset: 3px;
+}
+
+/* Dans la capsule C1 (overflow: hidden), le contour passe à l'intérieur, dans la couleur du texte. */
+.alb-caps button:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: -5px;
+}
+
+input:focus-visible, textarea:focus-visible { outline: none; }
+
+/* Moins d'animations demandées : plus de glissements ni de fondus (le disque est déjà arrêté). */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
 }
 
 /* ── Fond « Sillon + Mosaïque » ────────────────────────────────────────────
@@ -591,57 +611,6 @@ select option { background: var(--t2-nuit); color: var(--t2-texte); }
 .btn-outline:hover:not(:disabled) { background: var(--t2-survol); }
 .btn-sm { min-height: 34px; padding: 6px 14px; font-size: 13px; }
 
-/* URL input bar */
-.url-bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 16px;
-}
-
-.url-bar input { flex: 1; min-width: 0; }
-
-/* Rangée « champ + bouton(s) » réutilisable (ex. mot de passe d'accès dans les Paramètres). */
-.field-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    align-items: flex-end;
-}
-
-.field-row .form-group { flex: 1 1 200px; margin: 0; }
-.field-row .btn { min-height: var(--t2-cible); }
-
-/* Progress bar */
-.progress-bar-container {
-    background: var(--t2-piste);
-    border-radius: 12px;
-    height: 24px;
-    overflow: hidden;
-    margin: 12px 0;
-    position: relative;
-}
-
-.progress-bar-fill {
-    height: 100%;
-    background: var(--t2-action);
-    transition: width 0.3s ease;
-    border-radius: 12px;
-}
-
-/* Blanc sur la piste, noir sur la partie remplie : « difference » inverse le texte selon ce
-   qu'il recouvre. */
-.progress-bar-text {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 12px;
-    font-weight: 700;
-    color: #fff;
-    mix-blend-mode: difference;
-}
-
 /* Log output */
 .log-output {
     background: var(--t2-console);
@@ -657,24 +626,6 @@ select option { background: var(--t2-nuit); color: var(--t2-texte); }
     overflow-wrap: anywhere;
     line-height: 1.5;
 }
-
-/* Album info */
-.album-info {
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-}
-
-.album-info img {
-    width: 120px;
-    height: 120px;
-    border-radius: 6px;
-    object-fit: cover;
-    flex-shrink: 0;
-}
-
-.album-details h3 { margin-bottom: 4px; }
-.album-details p { color: var(--text-secondary); font-size: 0.9em; margin: 2px 0; }
 
 /* Settings grid */
 /* min(280px, 100%) : la grille retombe d'elle-même sur une colonne quand le conteneur est plus
@@ -1794,10 +1745,6 @@ select {
        sur deux lignes ici (libellé, puis boutons), d'où les 120px. */
     .main-content:has(.selection-bar) { padding-bottom: 120px; }
 
-    /* Le champ prend la ligne, les boutons se partagent la suivante. */
-    .url-bar input { flex: 1 1 100%; }
-    .url-bar .btn { flex: 1 1 auto; }
-
     /* Sous 16px, iOS Safari zoome sur le champ au focus et ne revient jamais en arrière. */
     input[type="text"], input[type="password"], input[type="email"], input[type="number"],
     textarea, select { font-size: 16px; }
@@ -1816,9 +1763,6 @@ select {
     /* « Tout télécharger » ne garde que l'icône ; son nom accessible reste complet. */
     .artist-dl .btn-label { display: none; }
     .artist-dl { padding: 6px 12px; }
-
-    .album-info img { width: 80px; height: 80px; }
-    .album-details h3 { font-size: 1.05em; }
 
     /* Carte « En cours » empilée : le disque au-dessus, centré. */
     .now-panel { grid-template-columns: minmax(0, 1fr); margin: 24px 0 32px; }
@@ -1844,9 +1788,6 @@ select {
 
     .quality-group { display: grid; grid-template-columns: 1fr 1fr; }
     .quality-btn { padding: 10px 8px; }
-
-    .field-row .form-group { flex: 1 1 100%; }
-    .field-row .btn { flex: 1 1 auto; }
 
     .toast-notification {
         left: 12px;

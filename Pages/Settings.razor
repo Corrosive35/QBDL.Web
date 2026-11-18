@@ -150,106 +150,106 @@
             <div class="template-section">
                 <div class="template-section-title">@Loc["settings.templates.section.release"]</div>
                 <div class="template-tokens">
-                    <span class="token" @onclick='() => CopyToken("%AlbumID%")'>%AlbumID%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumURL%")'>%AlbumURL%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumGenre%")'>%AlbumGenre%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumComposer%")'>%AlbumComposer%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumTitle%")'>%AlbumTitle%</span>
-                    <span class="token" @onclick='() => CopyToken("%Label%")'>%Label%</span>
-                    <span class="token" @onclick='() => CopyToken("%Copyright%")'>%Copyright%</span>
-                    <span class="token" @onclick='() => CopyToken("%UPC%")'>%UPC%</span>
-                    <span class="token" @onclick='() => CopyToken("%ReleaseDate%")'>%ReleaseDate%</span>
-                    <span class="token" @onclick='() => CopyToken("%Year%")'>%Year%</span>
-                    <span class="token" @onclick='() => CopyToken("%ReleaseType%")'>%ReleaseType%</span>
-                    <span class="token" @onclick='() => CopyToken("%ArtistName%")'>%ArtistName%</span>
-                    <span class="token" @onclick='() => CopyToken("%Format%")'>%Format%</span>
-                    <span class="token" @onclick='() => CopyToken("%FormatWithQuality%")'>%FormatWithQuality%</span>
-                    <span class="token" @onclick='() => CopyToken("%FormatWithHiResQuality%")'>%FormatWithHiResQuality%</span>
-                    <span class="token" @onclick='() => CopyToken("%BitDepth%")'>%BitDepth%</span>
-                    <span class="token" @onclick='() => CopyToken("%SampleRate%")'>%SampleRate%</span>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumID%")'>%AlbumID%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumURL%")'>%AlbumURL%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumGenre%")'>%AlbumGenre%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumComposer%")'>%AlbumComposer%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumTitle%")'>%AlbumTitle%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%Label%")'>%Label%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%Copyright%")'>%Copyright%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%UPC%")'>%UPC%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%ReleaseDate%")'>%ReleaseDate%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%Year%")'>%Year%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%ReleaseType%")'>%ReleaseType%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%ArtistName%")'>%ArtistName%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%Format%")'>%Format%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%FormatWithQuality%")'>%FormatWithQuality%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%FormatWithHiResQuality%")'>%FormatWithHiResQuality%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%BitDepth%")'>%BitDepth%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%SampleRate%")'>%SampleRate%</button>
                 </div>
             </div>
 
             <details class="template-subsection">
                 <summary>@Loc["settings.templates.section.parentalRelease"]</summary>
                 <div class="template-tokens">
-                    <span class="token" @onclick='() => CopyToken("%AlbumPA%")'>%AlbumPA%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAShort%")'>%AlbumPAShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifEx%")'>%AlbumPAifEx%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifExShort%")'>%AlbumPAifExShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifCl%")'>%AlbumPAifCl%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifClShort%")'>%AlbumPAifClShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAEnclosed%")'>%AlbumPAEnclosed%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAEnclosed[]%")'>%AlbumPAEnclosed[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAEnclosedShort%")'>%AlbumPAEnclosedShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAEnclosedShort[]%")'>%AlbumPAEnclosedShort[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosed%")'>%AlbumPAifExEnclosed%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosed[]%")'>%AlbumPAifExEnclosed[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosedShort%")'>%AlbumPAifExEnclosedShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosedShort[]%")'>%AlbumPAifExEnclosedShort[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosed%")'>%AlbumPAifClEnclosed%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosed[]%")'>%AlbumPAifClEnclosed[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosedShort%")'>%AlbumPAifClEnclosedShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosedShort[]%")'>%AlbumPAifClEnclosedShort[]%</span>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPA%")'>%AlbumPA%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAShort%")'>%AlbumPAShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifEx%")'>%AlbumPAifEx%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifExShort%")'>%AlbumPAifExShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifCl%")'>%AlbumPAifCl%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifClShort%")'>%AlbumPAifClShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAEnclosed%")'>%AlbumPAEnclosed%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAEnclosed[]%")'>%AlbumPAEnclosed[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAEnclosedShort%")'>%AlbumPAEnclosedShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAEnclosedShort[]%")'>%AlbumPAEnclosedShort[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosed%")'>%AlbumPAifExEnclosed%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosed[]%")'>%AlbumPAifExEnclosed[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosedShort%")'>%AlbumPAifExEnclosedShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosedShort[]%")'>%AlbumPAifExEnclosedShort[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosed%")'>%AlbumPAifClEnclosed%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosed[]%")'>%AlbumPAifClEnclosed[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosedShort%")'>%AlbumPAifClEnclosedShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosedShort[]%")'>%AlbumPAifClEnclosedShort[]%</button>
                 </div>
             </details>
 
             <div class="template-section">
                 <div class="template-section-title">@Loc["settings.templates.section.track"]</div>
                 <div class="template-tokens">
-                    <span class="token" @onclick='() => CopyToken("%TrackArtist%")'>%TrackArtist%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackComposer%")'>%TrackComposer%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackID%")'>%TrackID%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackNumber%")'>%TrackNumber%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackTitle%")'>%TrackTitle%</span>
-                    <span class="token" @onclick='() => CopyToken("%ISRC%")'>%ISRC%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackFormat%")'>%TrackFormat%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackFormatWithQuality%")'>%TrackFormatWithQuality%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackFormatWithHiResQuality%")'>%TrackFormatWithHiResQuality%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackBitDepth%")'>%TrackBitDepth%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackSampleRate%")'>%TrackSampleRate%</span>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackArtist%")'>%TrackArtist%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackComposer%")'>%TrackComposer%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackID%")'>%TrackID%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackNumber%")'>%TrackNumber%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackTitle%")'>%TrackTitle%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%ISRC%")'>%ISRC%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackFormat%")'>%TrackFormat%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackFormatWithQuality%")'>%TrackFormatWithQuality%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackFormatWithHiResQuality%")'>%TrackFormatWithHiResQuality%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackBitDepth%")'>%TrackBitDepth%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackSampleRate%")'>%TrackSampleRate%</button>
                 </div>
             </div>
 
             <details class="template-subsection">
                 <summary>@Loc["settings.templates.section.parentalTrack"]</summary>
                 <div class="template-tokens">
-                    <span class="token" @onclick='() => CopyToken("%TrackPA%")'>%TrackPA%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAShort%")'>%TrackPAShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifEx%")'>%TrackPAifEx%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifExShort%")'>%TrackPAifExShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifCl%")'>%TrackPAifCl%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifClShort%")'>%TrackPAifClShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAEnclosed%")'>%TrackPAEnclosed%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAEnclosed[]%")'>%TrackPAEnclosed[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAEnclosedShort%")'>%TrackPAEnclosedShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAEnclosedShort[]%")'>%TrackPAEnclosedShort[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifExEnclosed%")'>%TrackPAifExEnclosed%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifExEnclosed[]%")'>%TrackPAifExEnclosed[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifExEnclosedShort%")'>%TrackPAifExEnclosedShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifExEnclosedShort[]%")'>%TrackPAifExEnclosedShort[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifClEnclosed%")'>%TrackPAifClEnclosed%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifClEnclosed[]%")'>%TrackPAifClEnclosed[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifClEnclosedShort%")'>%TrackPAifClEnclosedShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifClEnclosedShort[]%")'>%TrackPAifClEnclosedShort[]%</span>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPA%")'>%TrackPA%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAShort%")'>%TrackPAShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifEx%")'>%TrackPAifEx%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifExShort%")'>%TrackPAifExShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifCl%")'>%TrackPAifCl%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifClShort%")'>%TrackPAifClShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAEnclosed%")'>%TrackPAEnclosed%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAEnclosed[]%")'>%TrackPAEnclosed[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAEnclosedShort%")'>%TrackPAEnclosedShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAEnclosedShort[]%")'>%TrackPAEnclosedShort[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifExEnclosed%")'>%TrackPAifExEnclosed%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifExEnclosed[]%")'>%TrackPAifExEnclosed[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifExEnclosedShort%")'>%TrackPAifExEnclosedShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifExEnclosedShort[]%")'>%TrackPAifExEnclosedShort[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifClEnclosed%")'>%TrackPAifClEnclosed%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifClEnclosed[]%")'>%TrackPAifClEnclosed[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifClEnclosedShort%")'>%TrackPAifClEnclosedShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifClEnclosedShort[]%")'>%TrackPAifClEnclosedShort[]%</button>
                 </div>
             </details>
 
             <div class="template-section">
                 <div class="template-section-title">@Loc["settings.templates.section.playlist"]</div>
                 <div class="template-tokens">
-                    <span class="token" @onclick='() => CopyToken("%PlaylistID%")'>%PlaylistID%</span>
-                    <span class="token" @onclick='() => CopyToken("%PlaylistTitle%")'>%PlaylistTitle%</span>
-                    <span class="token" @onclick='() => CopyToken("%Format%")'>%Format%</span>
-                    <span class="token" @onclick='() => CopyToken("%FormatWithQuality%")'>%FormatWithQuality%</span>
-                    <span class="token" @onclick='() => CopyToken("%FormatWithHiResQuality%")'>%FormatWithHiResQuality%</span>
+                    <button type="button" class="token" @onclick='() => CopyToken("%PlaylistID%")'>%PlaylistID%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%PlaylistTitle%")'>%PlaylistTitle%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%Format%")'>%Format%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%FormatWithQuality%")'>%FormatWithQuality%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%FormatWithHiResQuality%")'>%FormatWithHiResQuality%</button>
                 </div>
             </div>
 
             <div class="template-section">
                 <div class="template-section-title">@Loc["settings.templates.section.cd"]</div>
                 <div class="template-tokens">
-                    <span class="token" @onclick='() => CopyToken("%DiscNumber%")'>%DiscNumber%</span>
+                    <button type="button" class="token" @onclick='() => CopyToken("%DiscNumber%")'>%DiscNumber%</button>
                 </div>
             </div>
 

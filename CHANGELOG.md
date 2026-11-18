@@ -29,6 +29,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (compte, compte Qobuz et abonnement, langue, déconnexion, version).
 - **Reconnexion discrète** : un bandeau en haut de page remplace l'écran plein. Mêmes messages, et
   le bouton « Recharger » est disponible dès la première tentative.
+- **Recherche en grille.** Les albums s'affichent en grandes pochettes (deux colonnes sur
+  téléphone), avec sous chacune titre, artiste, date, pistes, format, et une capsule « choisir |
+  Télécharger ». « Dans la file » et « Déjà téléchargé » restent visibles. Pistes et artistes en
+  listes denses ; un artiste déplié montre sa discographie en grille, avec « Tout télécharger ».
+  La barre de sélection ne masque plus la dernière rangée.
+- **Téléchargement.** Carte « En cours » avec la pochette et le disque qui en sort (il tourne
+  pendant le téléchargement, sauf si l'appareil demande moins d'animations), grand pourcentage et
+  un segment par piste pour les albums et playlists. File avec badges d'état et boutons ronds ;
+  Annuler et Passer passent dans la carte « En cours ». Journal à côté de la file sur grand écran.
+- **Paramètres** en colonnes (trois au bureau), **Utilisateurs** et écrans de **connexion**
+  habillés dans le nouveau style ; les formulaires de connexion ne changent pas.
+- **Fond animé par les pages** : les pochettes affichées (résultats, file) tapissent le fond, en
+  gris et floutées.
+
+### Fixed
+- Dans les Paramètres, cliquer sur le libellé d'une case la coche désormais (il n'y était pas
+  relié).
+- Les variables de modèle (Paramètres → Modèles) se copient aussi au clavier.
+- Focus clavier visible sur tous les boutons ; la bascule FR | EN annonce la langue et son état.
 - **Image testée avant publication.** Avant de publier, la construction démarre l'image, vérifie
   que `/healthz` annonce `QBDL.Web` avec la version attendue et que la page d'accueil répond. En
   cas d'échec, elle affiche les journaux du conteneur et ne publie rien.
