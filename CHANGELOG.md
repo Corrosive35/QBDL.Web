@@ -5,6 +5,19 @@ All notable changes to QBDL.Web (formerly QobuzDLX.Web) are documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- **Image de développement `:dev`.** Chaque push sur la branche `dev` construit, teste puis publie
+  `thimble9057/qobuzdlx.web:dev` (amd64 et arm64). Elle ne publie jamais `latest` ni de tag de
+  version. Une image dev s'annonce `1.8.0-dev+<commit>` dans la barre latérale et dans `/healthz` ;
+  une release continue d'afficher la version seule.
+
+### Changed
+- **Image testée avant publication.** Avant de publier, la construction démarre l'image, vérifie
+  que `/healthz` annonce `QBDL.Web` avec la version attendue et que la page d'accueil répond. En
+  cas d'échec, elle affiche les journaux du conteneur et ne publie rien.
+
 ## [1.7.0] - 2026-11-16
 
 ### Added
