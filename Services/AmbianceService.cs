@@ -1,0 +1,38 @@
+namespace QBDL.Web.Services;
+
+/// <summary>
+/// Pochettes du « mur » du fond Sillon + Mosaïque (MainLayout.razor), propres à chaque circuit.
+/// Chaque page fournit les pochettes qu'elle affiche (SetCovers) et les retire en quittant
+/// (Clear) ; sans pochette, le fond reste calme : nuit, sillons et voile, sans mur. Le mur est
+/// passé en gris et flouté par le CSS : aucune couleur n'est tirée des images.
+/// </summary>
+public sealed class AmbianceService
+{
+    /// <summary>Au-delà, le mur n'en montre pas davantage : 8 colonnes × 6 rangées au bureau.</summary>
+    public const int MaxCovers = 48;
+
+    private IReadOnlyList<string> _covers = Array.Empty<string>();
+
+    public IReadOnlyList<string> Covers => _covers;
+
+    public event Action? Changed;
+
+    public void SetCovers(IEnumerable<string?>? urls)
+    {
+        // Adresses absolues http(s) uniquement : la liste vient des réponses de l'API Qobuz, mais
+        // finit dans un attribut src.
+        var covers = (urls ?? Enumerable.Empty<string?>())
+            .Where(u => Uri.TryCreate(u, UriKind.Absolute, out var uri)
+                        && (uri.Scheme == Uri.UriSchemeHttps || uri.Scheme == Uri.UriSchemeHttp))
+            .Select(u => u!)
+            .Distinct()
+            .Take(MaxCovers)
+            .ToArray();
+
+        if (covers.SequenceEqual(_covers)) return;
+        _covers = covers;
+        Changed?.Invoke();
+    }
+
+    public void Clear() => SetCovers(null);
+}

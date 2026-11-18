@@ -1,212 +1,463 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   QBDL · T2 « Ambiance pochette »
+
+   Polices auto-hébergées (wwwroot/fonts, licence SIL OFL 1.1 à côté de chaque fichier) : Syne
+   pour les titres, Figtree pour l'interface, en woff2 variables (une graisse = un fichier pour
+   toute la plage). La chasse fixe reste celle du système. Aucune requête vers Google Fonts.
+   ────────────────────────────────────────────────────────────────────────── */
+@font-face {
+    font-family: 'Syne';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400 800;
+    src: url('../fonts/syne-latin-wght.woff2') format('woff2-variations'),
+         url('../fonts/syne-latin-wght.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+@font-face {
+    font-family: 'Syne';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 400 800;
+    src: url('../fonts/syne-latin-ext-wght.woff2') format('woff2-variations'),
+         url('../fonts/syne-latin-ext-wght.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+@font-face {
+    font-family: 'Figtree';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 300 900;
+    src: url('../fonts/figtree-latin-wght.woff2') format('woff2-variations'),
+         url('../fonts/figtree-latin-wght.woff2') format('woff2');
+    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+@font-face {
+    font-family: 'Figtree';
+    font-style: normal;
+    font-display: swap;
+    font-weight: 300 900;
+    src: url('../fonts/figtree-latin-ext-wght.woff2') format('woff2-variations'),
+         url('../fonts/figtree-latin-ext-wght.woff2') format('woff2');
+    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
+}
+
+/* Jetons T2 : mêmes noms et valeurs que les maquettes (t2.css), ne pas les renommer. */
 :root {
-    --bg-primary: #1a1a2e;
-    --bg-secondary: #16213e;
-    --bg-card: #0f3460;
-    --bg-input: #1a1a2e;
-    --text-primary: #e0e0e0;
-    --text-secondary: #a0a0a0;
-    --accent: #e94560;
-    --accent-hover: #ff6b81;
-    --success: #4caf50;
-    --border: #2a2a4a;
-    --scrollbar: #2a2a4a;
-    /* Référencées par .selection-bar et la barre supérieure mobile. */
-    --sidebar-width: 220px;
-    --topbar-height: 52px;
+    /* Fond et voile */
+    --t2-nuit: #08090E;
+    --t2-voile: rgba(8, 9, 14, .70);
+    /* Texte */
+    --t2-texte: #FFFFFF;
+    --t2-texte-2: rgba(255, 255, 255, .86);    /* jamais sur --t2-verre-fort */
+    /* Verre */
+    --t2-verre: rgba(255, 255, 255, .10);
+    --t2-verre-fort: rgba(255, 255, 255, .16); /* texte blanc plein uniquement */
+    --t2-verre-flou: 24px;
+    --t2-reflet: inset 0 1px 0 rgba(255, 255, 255, .18);
+    --t2-filet: rgba(255, 255, 255, .14);
+    /* Actions : le blanc tient lieu d'accent, la forme porte le sens */
+    --t2-action: #FFFFFF;
+    --t2-action-texte: #08090E;
+    --t2-focus: 0 0 0 2px #08090E, 0 0 0 4px #FFFFFF;
+    /* Formes */
+    --t2-rayon-pochette: 14px;
+    --t2-rayon-vignette: 8px;
+    --t2-rayon-carte: 24px;
+    --t2-rayon-pilule: 999px;
+    --t2-cible: 44px;
+    /* Typographie */
+    --t2-titre: 'Syne', system-ui, sans-serif;
+    --t2-texte-police: 'Figtree', system-ui, sans-serif;
+    --t2-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+    /* Compléments propres à l'application, dans la même gamme. */
+    --t2-survol: rgba(255, 255, 255, .06);     /* survol d'une ligne, ligne dépliée */
+    --t2-console: rgba(8, 9, 14, .55);         /* journal, sous le texte à chasse fixe */
+    --t2-piste: rgba(255, 255, 255, .24);      /* fond d'une barre de progression */
+
+    /* Anciennes variables, remappées sur les jetons T2 le temps que chaque page reçoive sa
+       forme définitive (étapes 2 à 4 de la refonte). */
+    --bg-primary: var(--t2-nuit);
+    --bg-secondary: var(--t2-verre);
+    --bg-card: var(--t2-verre-fort);
+    --bg-input: var(--t2-verre);
+    --text-primary: var(--t2-texte);
+    --text-secondary: var(--t2-texte-2);
+    --accent: var(--t2-action);
+    --accent-hover: var(--t2-texte-2);
+    --success: var(--t2-texte);
+    --border: var(--t2-filet);
+    --scrollbar: var(--t2-verre-fort);
+
+    /* Coquille. --tabbar-space : hauteur réservée à la barre d'onglets mobile (0 au bureau, et
+       pendant la saisie au clavier où la barre est masquée). Référencée par les éléments fixés
+       en bas de l'écran : barre de sélection, notifications. */
+    --sidebar-width: 260px;
+    --tabbar-space: 0px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    background: var(--bg-primary);
-    color: var(--text-primary);
+    font-family: var(--t2-texte-police);
+    font-variant-numeric: tabular-nums;
+    background: var(--t2-nuit);
+    color: var(--t2-texte);
     height: 100%;
     overflow: hidden;
+}
+
+button, input, select, textarea { font-family: inherit; }
+
+h1, h2, h3 { font-family: var(--t2-titre); letter-spacing: -.02em; }
+
+:where(a, button, input, select, textarea, summary):focus-visible {
+    outline: none;
+    box-shadow: var(--t2-focus);
+}
+
+/* ── Fond « Sillon + Mosaïque » ────────────────────────────────────────────
+   Couches, de bas en haut : nuit → mur de pochettes (gris, flou, seulement si la page en
+   fournit, cf. AmbianceService) → sillons → voile haut/bas. Tout est en CSS : aucune couleur ne
+   sort des images. z-index 0 : contexte d'empilement propre, sous #app. */
+.fond-sillon-mosaique {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    background: var(--t2-nuit);
+    pointer-events: none;
+}
+
+.fsm-mur {
+    position: absolute;
+    inset: -70px;
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    align-content: start;
+    filter: grayscale(1) blur(14px);
+    opacity: .16;
+    transform: rotate(-8deg);
+}
+
+.fsm-mur img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+}
+
+.fond-sillon-mosaique::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: repeating-radial-gradient(circle at 112% -8%, rgba(255, 255, 255, .045) 0 1px, rgba(255, 255, 255, 0) 1px 6px);
+}
+
+.fond-sillon-mosaique::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background:
+        radial-gradient(circle at 112% -8%, rgba(8, 9, 14, 0) 0 28%, rgba(8, 9, 14, .35) 75%),
+        linear-gradient(rgba(8, 9, 14, .55), rgba(8, 9, 14, 0) 22%, rgba(8, 9, 14, 0) 68%, rgba(8, 9, 14, .72));
 }
 
 /* 100dvh : la hauteur suit l'apparition/disparition de la barre d'adresse mobile.
    La ligne 100vh reste comme repli pour les navigateurs qui ignorent dvh. */
 #app {
+    position: relative;
+    z-index: 1;
     display: flex;
     height: 100vh;
     height: 100dvh;
 }
 
-/* Sidebar */
+/* ── Barre latérale (bureau) ─────────────────────────────────────────────── */
 .sidebar {
     width: var(--sidebar-width);
-    background: var(--bg-secondary);
-    border-right: 1px solid var(--border);
+    flex-shrink: 0;
     display: flex;
     flex-direction: column;
-    padding: 16px 0;
-    flex-shrink: 0;
+    gap: 4px;
+    padding: 28px 18px 24px;
+    background: rgba(8, 9, 14, .38);
+    box-shadow: inset -1px 0 0 rgba(255, 255, 255, .08);
+    overflow-y: auto;
 }
 
 .sidebar-logo {
-    text-align: center;
-    padding: 0 16px 20px;
-    font-size: 1.4em;
-    font-weight: 700;
-    color: var(--accent);
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 8px;
-}
-
-.sidebar-user {
-    padding: 12px 16px;
-    font-size: 0.85em;
-    color: var(--text-secondary);
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 8px;
-}
-
-.sidebar-user strong { color: var(--text-primary); display: block; }
-
-/* Libellé de l'offre sous le nom du compte : « Studio », « Sublime »… */
-.user-label {
-    display: inline-block;
-    margin-top: 4px;
-    font-size: 0.9em;
-    color: var(--text-secondary);
-}
-
-/* Pastille d'alerte : prend la place du libellé quand l'offre manque ou a expiré. Cliquable,
-   elle mène aux Paramètres où la section « Compte » donne le détail. */
-.user-label-alert {
-    padding: 1px 8px;
-    border-radius: 9px;
-    background: var(--accent);
-    color: #fff;
-    font-size: 0.8em;
-    font-weight: 700;
+    display: block;
+    padding: 0 16px;
+    margin-bottom: 22px;
+    font: 800 30px/1 var(--t2-titre);
+    letter-spacing: -.04em;
+    color: var(--t2-texte);
     text-decoration: none;
 }
 
-.user-label-alert:hover { background: var(--accent-hover); }
+.sidebar-nav { display: flex; flex-direction: column; gap: 4px; }
 
-/* Compte Qobuz de l'instance, rappelé sous l'identifiant de l'utilisateur connecté. */
-.sidebar-qobuz {
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 48px;
+    padding: 0 16px;
+    border-radius: 24px;
+    color: var(--t2-texte-2);
+    font: 600 15px var(--t2-texte-police);
+    text-decoration: none;
+    transition: background .15s, color .15s;
+}
+
+.nav-link:hover { background: var(--t2-survol); color: var(--t2-texte); }
+.nav-link.active { background: var(--t2-verre-fort); color: var(--t2-texte); }
+.nav-icon { flex-shrink: 0; }
+
+/* Pastille du menu : le compteur des éléments restants, poussée contre le bord droit. */
+.nav-badge {
+    margin-left: auto;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    border-radius: 11px;
+    background: var(--t2-action);
+    color: var(--t2-action-texte);
+    font: 700 12px/22px var(--t2-texte-police);
+    text-align: center;
+}
+
+.nav-spacer { flex: 1; min-height: 32px; }
+
+/* Mini-carte « En cours » (NowCard.razor). */
+.now-card {
     display: block;
-    margin-top: 2px;
-    font-size: 0.9em;
+    margin-top: 24px;
+    padding: 12px;
+    border-radius: 20px;
+    color: var(--t2-texte);
+    text-decoration: none;
+    background: var(--t2-verre);
+    box-shadow: var(--t2-reflet);
+    transition: background .15s;
+}
+
+.now-card:hover { background: var(--t2-verre-fort); }
+
+.now-card-row { display: flex; align-items: center; gap: 12px; }
+
+.now-card img,
+.now-card-thumb {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    border-radius: var(--t2-rayon-vignette);
+    object-fit: cover;
+    background: var(--t2-verre);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, .08);
+}
+
+.now-card-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+
+.now-card-cap {
+    font: 600 10.5px/1 var(--t2-texte-police);
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--t2-texte-2);
+}
+
+.now-card-title {
+    font: 650 14.5px/1.2 var(--t2-texte-police);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-/* Le formulaire de déconnexion ne crée pas de boîte : son bouton reste un .nav-link comme les
-   autres entrées de la barre latérale. */
-.nav-form { display: contents; }
+.now-card-pct { flex-shrink: 0; font: 800 20px/1 var(--t2-titre); }
+.now-card-pct small { font-size: 11px; }
 
-.nav-link {
+.now-card-bar {
+    display: block;
+    margin-top: 12px;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--t2-piste);
+    overflow: hidden;
+}
+
+.now-card-bar i {
+    display: block;
+    height: 100%;
+    border-radius: 3px;
+    background: var(--t2-action);
+    transition: width .3s ease;
+}
+
+/* ── Bloc Session (SessionPanel.razor) ───────────────────────────────────────
+   Bas de la barre latérale au bureau ; bas des Paramètres sur mobile. */
+.session { display: flex; flex-direction: column; gap: 12px; }
+
+.session-sidebar { padding: 16px 4px 0; border-top: 1px solid var(--t2-filet); }
+
+.session-page { display: none; }
+
+.session-who { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+.session-avatar {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 50%;
     display: flex;
     align-items: center;
-    padding: 10px 20px;
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-size: 0.95em;
-    transition: all 0.15s;
-    cursor: pointer;
-    border: none;
-    background: none;
-    width: 100%;
-    text-align: left;
+    justify-content: center;
+    background: var(--t2-verre);
+    box-shadow: var(--t2-reflet);
+    font: 700 15px var(--t2-texte-police);
 }
 
-.nav-link:hover { background: rgba(233,69,96,0.1); color: var(--text-primary); }
-.nav-link.active { background: rgba(233,69,96,0.2); color: var(--accent); border-right: 3px solid var(--accent); }
+.session-id { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 
-.nav-spacer { flex: 1; }
+.session-id strong,
+.session-qobuz {
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
-.sidebar-version {
-    padding: 8px 12px 4px;
-    font-size: 0.75em;
-    color: var(--text-secondary);
-    opacity: 0.7;
+.session-id strong { font: 650 15px/1.2 var(--t2-texte-police); }
+.session-qobuz { font-size: 12.5px; color: var(--t2-texte-2); }
+
+.session-role {
+    flex-shrink: 0;
+    height: 24px;
+    padding: 0 10px;
+    border-radius: var(--t2-rayon-pilule);
+    box-shadow: inset 0 0 0 1.5px var(--t2-texte);
+    font: 650 11.5px/24px var(--t2-texte-police);
+}
+
+.session-lang {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--t2-texte-2);
+}
+
+.session-logout { width: 100%; }
+
+.session-version {
     text-align: center;
+    font: 600 11px var(--t2-texte-police);
+    letter-spacing: .08em;
+    color: var(--t2-texte-2);
+    overflow-wrap: anywhere;
 }
 
-/* Bascule de langue FR | EN (sidebar, écran de connexion, écran de verrouillage) */
+/* Libellé de l'offre sous le compte : « Studio », « Sublime »… */
+.user-label {
+    display: inline-block;
+    font-size: 12.5px;
+    color: var(--t2-texte-2);
+}
+
+/* Pastille d'alerte : prend la place du libellé quand l'offre manque ou a expiré. Cliquable,
+   elle mène aux Paramètres où la section « Compte » donne le détail. */
+.user-label-alert {
+    padding: 2px 10px;
+    border-radius: var(--t2-rayon-pilule);
+    background: var(--t2-action);
+    color: var(--t2-action-texte);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.user-label-alert:hover { background: var(--t2-texte-2); }
+
+/* Bascule de langue FR | EN (bloc Session, écrans de connexion et d'attente). */
 .lang-switch {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 10px 12px 0;
+    gap: 2px;
 }
 
 .lang-switch button {
+    min-width: var(--t2-cible);
+    min-height: var(--t2-cible);
+    padding: 0 6px;
     background: none;
     border: none;
-    width: auto;
-    padding: 2px 6px;
-    font-size: 0.75em;
-    font-weight: 600;
-    letter-spacing: 0.05em;
-    color: var(--text-secondary);
-    opacity: 0.7;
-    border-radius: 4px;
+    border-radius: 22px;
+    color: var(--t2-texte-2);
+    font: 600 14px var(--t2-texte-police);
+    letter-spacing: .04em;
     cursor: pointer;
-    transition: color 0.15s, opacity 0.15s;
+    transition: color .15s;
 }
 
-.lang-switch button:hover {
-    opacity: 1;
-    color: var(--text-primary);
-}
+.lang-switch button:hover { color: var(--t2-texte); }
 
 .lang-switch button.active {
-    color: var(--accent);
-    opacity: 1;
+    color: var(--t2-texte);
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 255, 255, .6);
+    text-underline-offset: 5px;
     cursor: default;
 }
 
-.lang-switch-sep {
-    font-size: 0.75em;
-    color: var(--text-secondary);
-    opacity: 0.4;
-}
+.lang-switch-sep { color: var(--t2-texte-2); opacity: .5; }
 
-/* Barre supérieure mobile (burger). Masquée au-dessus du palier, cf. @media plus bas. */
-.app-topbar {
-    display: none;
+.session-lang .lang-switch { justify-content: flex-end; }
+
+/* ── Barre d'onglets (mobile) ───────────────────────────────────────────────
+   Masquée au bureau ; affichée sous 768px (cf. Responsive). */
+.tabbar { display: none; }
+
+.tab {
+    flex: 1 1 0;
+    min-width: 0;
+    min-height: 52px;
+    border-radius: 24px;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 12px;
-    height: var(--topbar-height);
-    flex-shrink: 0;
-    padding: 0 12px;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
+    justify-content: center;
+    gap: 4px;
+    padding: 0 2px;
+    color: var(--t2-texte-2);
+    font: 600 10.5px/1.1 var(--t2-texte-police);
+    text-decoration: none;
 }
 
-.topbar-burger {
-    background: none;
-    border: none;
-    color: var(--text-primary);
-    font-size: 1.5em;
-    line-height: 1;
-    padding: 6px 10px;
-    cursor: pointer;
-    border-radius: 6px;
-}
+.tab.active { background: var(--t2-verre-fort); color: var(--t2-texte); font-weight: 700; }
 
-.topbar-title {
-    font-size: 1.1em;
-    font-weight: 700;
-    color: var(--accent);
-}
+.tab-icon { position: relative; display: inline-flex; }
 
-/* Voile derrière le tiroir. Comme la barre supérieure, inactif sur grand écran. */
-.sidebar-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 150;
-    opacity: 0;
-    transition: opacity 0.2s;
+.tab-label { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.tab-badge {
+    position: absolute;
+    top: -6px;
+    left: calc(100% - 7px);
+    min-width: 17px;
+    height: 17px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: var(--t2-action);
+    color: var(--t2-action-texte);
+    font: 700 10.5px/17px var(--t2-texte-police);
+    text-align: center;
 }
 
 /* Écrans de connexion et de verrouillage */
@@ -221,7 +472,7 @@ html, body {
     /* « safe » évite que le haut du formulaire soit rogné (et donc inatteignable) quand le
        contenu dépasse la hauteur de l'écran ; le centrage reste effectif sinon. */
     justify-content: safe center;
-    padding: 16px 0;
+    padding: calc(16px + env(safe-area-inset-top)) 0 calc(16px + env(safe-area-inset-bottom));
     /* body est en overflow:hidden : sans cela, un formulaire plus haut que l'écran (connexion
        par jeton sur un petit téléphone) ne pourrait pas défiler. */
     overflow-y: auto;
@@ -234,30 +485,54 @@ html, body {
     padding: 0 16px;
 }
 
+.auth-card > .lang-switch,
+.auth-shell > .lang-switch { margin-top: 12px; }
+
+.auth-head { text-align: center; margin-bottom: 20px; }
+
+.auth-logo {
+    font: 800 40px/1 var(--t2-titre);
+    letter-spacing: -.04em;
+    color: var(--t2-texte);
+}
+
+.auth-subtitle { margin-top: 8px; font-size: 14px; color: var(--t2-texte-2); }
+
 /* Main content */
 .main-content {
     flex: 1;
+    min-width: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 24px;
+    padding: 32px 36px;
+}
+
+/* Titre de page : les pages posent un <h3> en tête de leur contenu. */
+.main-content > h3 {
+    font: 800 clamp(34px, 5.2vw, 64px)/.95 var(--t2-titre);
+    letter-spacing: -.035em;
+    overflow-wrap: anywhere;
 }
 
 /* Cards */
+/* Verre : fond translucide flouté, reflet en haut. */
 .card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 20px;
+    background: var(--t2-verre);
+    -webkit-backdrop-filter: blur(var(--t2-verre-flou)) saturate(1.4);
+    backdrop-filter: blur(var(--t2-verre-flou)) saturate(1.4);
+    box-shadow: var(--t2-reflet);
+    border-radius: var(--t2-rayon-carte);
+    padding: 22px;
     margin-bottom: 16px;
 }
 
 /* Flex plutôt que des flottants : les outils (tri, tout sélectionner) peuvent ainsi passer à la
    ligne sur écran étroit au lieu de chevaucher le titre. */
 .card-title {
-    font-size: 0.8em;
+    font: 600 11px/1.2 var(--t2-texte-police);
     text-transform: uppercase;
-    color: var(--text-secondary);
-    letter-spacing: 1px;
+    color: var(--t2-texte-2);
+    letter-spacing: .16em;
     margin-bottom: 12px;
     display: flex;
     align-items: center;
@@ -268,40 +543,53 @@ html, body {
 /* Inputs */
 input[type="text"], input[type="password"], input[type="email"], input[type="number"],
 textarea, select {
-    background: var(--bg-input);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    color: var(--text-primary);
-    padding: 10px 14px;
+    background: var(--t2-verre);
+    border: 1px solid transparent;
+    border-radius: var(--t2-rayon-pilule);
+    color: var(--t2-texte);
+    min-height: var(--t2-cible);
+    padding: 10px 18px;
     width: 100%;
-    font-size: 0.95em;
+    font: 500 15px var(--t2-texte-police);
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color .2s;
 }
 
-input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+textarea { border-radius: 18px; font-family: var(--t2-mono); font-size: 13.5px; }
 
-/* Buttons */
+input::placeholder, textarea::placeholder { color: var(--t2-texte-2); opacity: .8; }
+
+input:focus, textarea:focus, select:focus { border-color: var(--t2-texte); }
+
+/* La liste déroulante native s'affiche hors de la page : elle garde un fond opaque. */
+select option { background: var(--t2-nuit); color: var(--t2-texte); }
+
+/* Buttons : pilules. Blanc plein = action principale ; verre = secondaire ; contour = action
+   qui retire ou coupe (la forme porte le sens, pas la couleur). */
 .btn {
-    padding: 10px 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 8px 18px;
     border: none;
-    border-radius: 6px;
-    font-size: 0.9em;
-    font-weight: 600;
+    border-radius: var(--t2-rayon-pilule);
+    font: 650 14px/1.15 var(--t2-texte-police);
     cursor: pointer;
-    transition: all 0.15s;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    transition: background .15s, color .15s, opacity .15s;
 }
 
-.btn-primary { background: var(--accent); color: white; }
-.btn-primary:hover { background: var(--accent-hover); }
-.btn-primary:disabled { background: #555; cursor: not-allowed; }
-.btn-secondary { background: var(--border); color: var(--text-primary); }
-.btn-secondary:hover { background: #3a3a5a; }
-.btn-danger { background: #c0392b; color: white; }
-.btn-danger:hover { background: #e74c3c; }
-.btn-sm { padding: 6px 12px; font-size: 0.8em; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-primary { background: var(--t2-action); color: var(--t2-action-texte); box-shadow: 0 8px 20px -8px rgba(0, 0, 0, .6); }
+.btn-primary:hover:not(:disabled) { background: var(--t2-texte-2); }
+.btn-secondary { background: var(--t2-verre); color: var(--t2-texte); box-shadow: var(--t2-reflet); }
+.btn-secondary:hover:not(:disabled) { background: var(--t2-verre-fort); }
+.btn-danger,
+.btn-outline { background: transparent; color: var(--t2-texte); box-shadow: inset 0 0 0 1.5px var(--t2-texte); }
+.btn-danger:hover:not(:disabled),
+.btn-outline:hover:not(:disabled) { background: var(--t2-survol); }
+.btn-sm { min-height: 34px; padding: 6px 14px; font-size: 13px; }
 
 /* URL input bar */
 .url-bar {
@@ -322,12 +610,12 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 }
 
 .field-row .form-group { flex: 1 1 200px; margin: 0; }
-.field-row .btn { height: 38px; }
+.field-row .btn { min-height: var(--t2-cible); }
 
 /* Progress bar */
 .progress-bar-container {
-    background: var(--bg-input);
-    border-radius: 4px;
+    background: var(--t2-piste);
+    border-radius: 12px;
     height: 24px;
     overflow: hidden;
     margin: 12px 0;
@@ -336,27 +624,31 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 
 .progress-bar-fill {
     height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+    background: var(--t2-action);
     transition: width 0.3s ease;
-    border-radius: 4px;
+    border-radius: 12px;
 }
 
+/* Blanc sur la piste, noir sur la partie remplie : « difference » inverse le texte selon ce
+   qu'il recouvre. */
 .progress-bar-text {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    font-size: 0.75em;
-    font-weight: 600;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    mix-blend-mode: difference;
 }
 
 /* Log output */
 .log-output {
-    background: #0d0d1a;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 12px;
-    font-family: 'Cascadia Code', 'Consolas', monospace;
+    background: var(--t2-console);
+    border: none;
+    border-radius: 16px;
+    padding: 14px 16px;
+    font-family: var(--t2-mono);
     font-size: 0.82em;
     max-height: 300px;
     overflow-y: auto;
@@ -415,10 +707,9 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 }
 
 .account-alert {
-    border: 1px solid var(--accent);
-    border-left-width: 3px;
-    border-radius: 6px;
-    background: rgba(233, 69, 96, 0.12);
+    border: 1.5px solid var(--t2-texte);
+    border-radius: 16px;
+    background: var(--t2-verre);
     padding: 10px 12px;
     margin-bottom: 14px;
     font-size: 0.85em;
@@ -427,24 +718,26 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 
 /* Messages des formulaires (connexion, installation, mot de passe, comptes). L'erreur reprend les
    teintes de l'alerte en ligne qu'elle remplace sur l'écran de connexion. */
+/* Erreur : contour plein ; succès : verre. Pas de rouge ni de vert, la forme distingue les deux. */
 .auth-error {
-    background: rgba(231, 76, 60, 0.15);
-    border: 1px solid #c0392b;
-    border-radius: 6px;
-    padding: 10px;
+    background: var(--t2-verre);
+    border: 1.5px solid var(--t2-texte);
+    border-radius: 16px;
+    padding: 10px 14px;
     margin-bottom: 12px;
-    font-size: 0.85em;
-    color: #e74c3c;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--t2-texte);
 }
 
 .form-success {
-    background: rgba(76, 175, 80, 0.12);
-    border: 1px solid var(--success);
-    border-radius: 6px;
-    padding: 10px;
+    background: var(--t2-verre);
+    box-shadow: var(--t2-reflet);
+    border-radius: 16px;
+    padding: 10px 14px;
     margin-bottom: 12px;
-    font-size: 0.85em;
-    color: var(--success);
+    font-size: 14px;
+    color: var(--t2-texte);
 }
 
 /* Utilisateur sans droit d'administration, compte Qobuz pas encore connecté. */
@@ -505,7 +798,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
     font-weight: 600;
 }
 
-.user-role.admin { background: var(--accent); color: #fff; }
+.user-role.admin { background: var(--t2-action); color: var(--t2-action-texte); }
 
 .user-self {
     font-size: 0.75em;
@@ -530,7 +823,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
     transition: background 0.15s;
 }
 
-.search-result-row:hover { background: rgba(233,69,96,0.05); }
+.search-result-row:hover { background: var(--t2-survol); }
 
 .search-result-row > .btn { flex-shrink: 0; }
 
@@ -560,8 +853,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
     width: 50px;
     height: 50px;
     border-radius: 50%;
-    background: var(--accent);
-    color: #fff;
+    background: var(--t2-verre-fort);
+    color: var(--t2-texte);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -574,7 +867,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 .artist-block:last-child { border-bottom: none; }
 
 .artist-row { cursor: pointer; border-bottom: none; }
-.artist-row.expanded { background: rgba(233,69,96,0.08); }
+.artist-row.expanded { background: var(--t2-survol); }
 
 .expand-icon {
     color: var(--text-secondary);
@@ -590,7 +883,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 }
 
 .artist-album-row {
-    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+    border-bottom: 1px solid var(--t2-survol) !important;
     padding: 8px 10px !important;
 }
 
@@ -617,28 +910,34 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
     flex-shrink: 0;
 }
 
-.search-result-row.selected { background: rgba(233,69,96,0.1); }
+.search-result-row.selected { background: var(--t2-verre); }
 
-/* margin-left:auto pousse le groupe d'outils à droite du titre (ex-float). */
+/* margin-left:auto pousse le groupe d'outils à droite du titre (ex-float). Lien souligné. */
 .select-all-btn {
     margin-left: auto;
-    color: var(--accent) !important;
-    font-size: 0.85em !important;
+    color: var(--t2-texte) !important;
+    font-size: 13px !important;
+    font-weight: 600;
+    letter-spacing: normal;
+    text-transform: none;
+    text-decoration: underline !important;
+    text-decoration-color: rgba(255, 255, 255, .4) !important;
+    text-underline-offset: 5px;
     padding: 0 !important;
     background: none !important;
     border: none !important;
     cursor: pointer;
-    text-decoration: none;
 }
 
-.select-all-btn:hover { text-decoration: underline; }
+.select-all-btn:hover { text-decoration-color: var(--t2-texte) !important; }
 
 /* Sorting */
 .sort-select {
     width: auto;
     max-width: 100%;
-    padding: 3px 8px;
-    font-size: 0.85em;
+    min-height: 36px;
+    padding: 4px 14px;
+    font-size: 13px;
     text-transform: none;
     letter-spacing: normal;
     cursor: pointer;
@@ -654,10 +953,12 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 .selection-bar {
     position: fixed;
     bottom: 0;
-    left: var(--sidebar-width, 220px);
+    left: var(--sidebar-width, 260px);
     right: 0;
-    background: var(--bg-secondary);
-    border-top: 1px solid var(--border);
+    background: rgba(8, 9, 14, .82);
+    -webkit-backdrop-filter: blur(var(--t2-verre-flou));
+    backdrop-filter: blur(var(--t2-verre-flou));
+    box-shadow: inset 0 1px 0 var(--t2-filet);
     padding: 12px 24px;
     display: flex;
     align-items: center;
@@ -690,34 +991,35 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 }
 
 .quality-btn {
+    min-height: var(--t2-cible);
     padding: 8px 16px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--bg-input);
-    color: var(--text-secondary);
+    border: none;
+    border-radius: 18px;
+    background: var(--t2-verre);
+    box-shadow: var(--t2-reflet);
+    color: var(--t2-texte);
     cursor: pointer;
-    font-size: 0.85em;
-    transition: all 0.15s;
+    font: 600 14px/1.2 var(--t2-texte-police);
+    transition: background .15s, color .15s;
 }
 
 .quality-btn.active {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: rgba(233,69,96,0.1);
+    background: var(--t2-action);
+    color: var(--t2-action-texte);
 }
 
 /* Template Help */
 .template-help {
-    background: rgba(15, 52, 96, 0.3);
-    border: 1px solid var(--border);
-    border-radius: 6px;
+    background: var(--t2-verre);
+    border: none;
+    border-radius: 18px;
     overflow: hidden;
 }
 
 .template-help-toggle {
-    padding: 10px 14px;
+    padding: 12px 16px;
     cursor: pointer;
-    color: var(--accent);
+    color: var(--t2-texte);
     font-size: 0.9em;
     font-weight: 600;
     user-select: none;
@@ -737,7 +1039,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
     transform: rotate(90deg);
 }
 
-.template-help-toggle:hover { color: var(--accent-hover); }
+.template-help-toggle:hover { color: var(--t2-texte-2); }
 
 .template-help-content {
     padding: 4px 14px 14px;
@@ -751,10 +1053,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
     font-size: 0.75em;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: var(--accent);
+    color: var(--t2-texte-2);
     margin-bottom: 6px;
     padding-bottom: 4px;
-    border-bottom: 1px solid rgba(233,69,96,0.2);
+    border-bottom: 1px solid var(--t2-filet);
 }
 
 .template-subsection {
@@ -774,7 +1076,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 
 .template-subsection > summary::before {
     content: "+ ";
-    color: var(--accent);
+    color: var(--t2-texte);
 }
 
 .template-subsection[open] > summary::before {
@@ -790,29 +1092,24 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 
 .token {
     display: inline-block;
-    background: var(--bg-input);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 3px 8px;
-    font-family: 'Cascadia Code', 'Consolas', monospace;
-    font-size: 0.78em;
-    color: #7ec8e3;
+    background: var(--t2-verre);
+    border: 1px solid transparent;
+    border-radius: var(--t2-rayon-pilule);
+    padding: 3px 10px;
+    font-family: var(--t2-mono);
+    font-size: 12px;
+    color: var(--t2-texte);
     cursor: pointer;
-    transition: all 0.15s;
+    transition: border-color .15s, background .15s;
     user-select: none;
 }
 
 .token:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: rgba(233,69,96,0.08);
-    transform: translateY(-1px);
+    border-color: var(--t2-texte);
+    background: var(--t2-verre-fort);
 }
 
-.token:active {
-    transform: translateY(0);
-    background: rgba(233,69,96,0.15);
-}
+.token:active { background: var(--t2-action); color: var(--t2-action-texte); }
 
 .template-hint {
     font-size: 0.75em;
@@ -860,10 +1157,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 
 .queue-row:last-child { border-bottom: none; }
 
-.queue-row.running { background: rgba(233,69,96,0.08); border-left-color: var(--accent); }
+.queue-row.running { background: var(--t2-survol); border-left-color: var(--t2-texte); }
 .queue-row.done { opacity: 0.6; }
-.queue-row.failed { border-left-color: #c0392b; }
-.queue-row.cancelled { opacity: 0.6; border-left-color: var(--text-secondary); }
+.queue-row.failed { border-left-color: var(--t2-texte); border-left-style: dashed; }
+.queue-row.cancelled { opacity: 0.6; border-left-color: var(--t2-texte-2); }
 
 .queue-row img,
 .queue-thumb-placeholder {
@@ -901,7 +1198,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 
 .queue-info .title { font-weight: 600; font-size: 0.9em; }
 .queue-info .sub { color: var(--text-secondary); font-size: 0.8em; }
-.queue-info .err { color: #e74c3c; font-size: 0.75em; }
+.queue-info .err { color: var(--t2-texte); font-size: 0.75em; font-style: italic; }
 
 .queue-status {
     flex-shrink: 0;
@@ -915,9 +1212,10 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
     white-space: nowrap;
 }
 
-.queue-status.running { background: var(--accent); color: white; }
-.queue-status.done { background: var(--success); color: white; }
-.queue-status.failed { background: #c0392b; color: white; }
+/* La forme porte l'état : plein = en cours, verre = terminé, contour = échec. */
+.queue-status.running { background: var(--t2-action); color: var(--t2-action-texte); }
+.queue-status.done { background: var(--t2-verre-fort); color: var(--t2-texte); }
+.queue-status.failed { background: transparent; color: var(--t2-texte); box-shadow: inset 0 0 0 1.5px var(--t2-texte); }
 
 .queue-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
@@ -928,41 +1226,24 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: var(--border);
-    color: var(--text-primary);
+    background: var(--t2-verre);
+    color: var(--t2-texte);
     border: none;
-    border-radius: 6px;
+    border-radius: 50%;
     cursor: pointer;
     font-size: 0.85em;
     line-height: 1;
     transition: background 0.2s;
 }
 
-.queue-btn:hover:not(:disabled) { background: #3a3a5a; }
+.queue-btn:hover:not(:disabled) { background: var(--t2-verre-fort); }
 .queue-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.queue-btn.danger:hover:not(:disabled) { background: #c0392b; }
-
-/* Pastille du menu : le compteur des éléments restants. .nav-link est déjà en flex, un
-   margin-left:auto suffit à la pousser contre le bord droit, tiroir mobile compris. */
-.nav-badge {
-    margin-left: auto;
-    background: var(--accent);
-    color: white;
-    font-size: 0.7em;
-    font-weight: 700;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    border-radius: 9px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
+.queue-btn.danger:hover:not(:disabled) { background: transparent; box-shadow: inset 0 0 0 1.5px var(--t2-texte); }
 
 /* Marque « déjà téléchargé » en page Recherche. Toujours posée en FRÈRE du bouton, jamais en
    enfant : à l'intérieur, la règle ::before du palier 640px l'avalerait. */
 .queue-done-mark {
-    color: var(--success);
+    color: var(--t2-texte);
     font-size: 0.95em;
     flex-shrink: 0;
     line-height: 1;
@@ -971,21 +1252,25 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 /* Toast notification */
 .toast-notification {
     position: fixed;
-    bottom: 24px;
+    bottom: calc(var(--tabbar-space) + 24px);
     right: 24px;
-    background: var(--success);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 6px;
-    font-size: 0.85em;
-    font-weight: 600;
+    background: var(--t2-action);
+    color: var(--t2-action-texte);
+    padding: 12px 20px;
+    border-radius: var(--t2-rayon-pilule);
+    font-size: 14px;
+    font-weight: 650;
     z-index: 9999;
     animation: toastIn 0.3s ease, toastOut 0.3s ease 1.2s forwards;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    box-shadow: 0 8px 20px -8px rgba(0, 0, 0, .6);
 }
 
-/* Un « URL invalide » sur fond vert serait trompeur. */
-.toast-notification.error { background: #c0392b; }
+/* Une erreur ne doit pas ressembler à une confirmation : fond nuit et contour. */
+.toast-notification.error {
+    background: var(--t2-nuit);
+    color: var(--t2-texte);
+    box-shadow: inset 0 0 0 1.5px var(--t2-texte), 0 8px 20px -8px rgba(0, 0, 0, .6);
+}
 
 @keyframes toastIn {
     from { transform: translateY(20px); opacity: 0; }
@@ -999,58 +1284,84 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #3a3a5a; }
+::-webkit-scrollbar-thumb:hover { background: var(--t2-piste); }
 
 /* ──────────────────────────────────────────────────────────────────────────
    Responsive
-   768px : bascule en tiroir, la barre latérale sort du flux.
+   768px : la barre latérale cède la place à la barre d'onglets en bas.
    640px : densité des listes de résultats.
    480px : téléphone, boutons pleine largeur.
    ────────────────────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
-    /* Barre supérieure au-dessus du contenu, tiroir par-dessus le tout. */
-    #app { flex-direction: column; }
-
-    .app-topbar { display: flex; }
-
-    .sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        width: min(78vw, 260px);
-        z-index: 200;
-        transform: translateX(-100%);
-        transition: transform 0.2s ease;
-        overflow-y: auto;
-        padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    /* Contenu au-dessus, barre d'onglets en bas, dans le flux : elle ne recouvre jamais la fin
+       de la page. 74px = onglets (52) + marges internes (12) + marge basse (10). */
+    #app {
+        flex-direction: column;
+        --tabbar-space: calc(74px + env(safe-area-inset-bottom));
     }
 
-    .sidebar.open { transform: translateX(0); }
+    .sidebar { display: none; }
 
-    .sidebar-backdrop { display: block; pointer-events: none; }
-    .sidebar-backdrop.open { opacity: 1; pointer-events: auto; }
+    .tabbar {
+        display: flex;
+        flex-shrink: 0;
+        gap: 4px;
+        margin: 0 12px calc(10px + env(safe-area-inset-bottom));
+        padding: 6px;
+        border-radius: 30px;
+        background: var(--t2-verre);
+        -webkit-backdrop-filter: blur(var(--t2-verre-flou)) saturate(1.4);
+        backdrop-filter: blur(var(--t2-verre-flou)) saturate(1.4);
+        box-shadow: var(--t2-reflet), 0 10px 30px -12px rgba(0, 0, 0, .8);
+    }
 
-    .main-content { padding: 16px 12px calc(16px + env(safe-area-inset-bottom)); }
+    /* Clavier ouvert (un champ de saisie a le focus) : la barre d'onglets se retire pour laisser
+       la place au champ, et les éléments fixés en bas redescendent. */
+    #app:has(:is(input:not([type="checkbox"], [type="radio"], [type="button"], [type="submit"], [type="hidden"]), textarea):focus) {
+        --tabbar-space: 0px;
+    }
 
-    /* Plus de barre latérale dans le flux : la barre de sélection part du bord. */
+    #app:has(:is(input:not([type="checkbox"], [type="radio"], [type="button"], [type="submit"], [type="hidden"]), textarea):focus) .tabbar {
+        display: none;
+    }
+
+    /* Le bloc Session passe en bas des Paramètres. */
+    .session-page {
+        display: flex;
+        margin-bottom: 16px;
+        padding: 20px;
+        border-radius: var(--t2-rayon-carte);
+        background: var(--t2-verre);
+        -webkit-backdrop-filter: blur(var(--t2-verre-flou)) saturate(1.4);
+        backdrop-filter: blur(var(--t2-verre-flou)) saturate(1.4);
+        box-shadow: var(--t2-reflet);
+    }
+
+    .fsm-mur { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .main-content { padding: calc(20px + env(safe-area-inset-top)) 14px 20px; }
+
+    /* Plus de barre latérale : la barre de sélection flotte au-dessus des onglets. */
     .selection-bar {
-        left: 0;
+        left: 12px;
+        right: 12px;
+        bottom: calc(var(--tabbar-space) + 4px);
         flex-wrap: wrap;
-        padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+        padding: 10px 12px;
+        border-radius: 26px;
+        background: rgba(8, 9, 14, .86);
+        box-shadow: var(--t2-reflet), inset 0 0 0 1px var(--t2-filet);
     }
 
     .selection-bar span { flex: 1 1 100%; }
     .selection-bar .btn { flex: 1 1 auto; }
 
     /* La barre est fixe : sans réserve, elle masque la dernière ligne de résultats. Elle passe
-       sur deux lignes ici (libellé, puis boutons), d'où les 110px. */
-    .main-content:has(.selection-bar) {
-        padding-bottom: calc(110px + env(safe-area-inset-bottom));
-    }
+       sur deux lignes ici (libellé, puis boutons), d'où les 120px. */
+    .main-content:has(.selection-bar) { padding-bottom: 120px; }
 
     /* Le champ prend la ligne, les boutons se partagent la suivante. */
     .url-bar input { flex: 1 1 100%; }
@@ -1061,6 +1372,8 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
     textarea, select { font-size: 16px; }
 
     .sort-select { font-size: 14px; }
+
+    .main-content > h3 { font-size: 34px; }
 }
 
 @media (max-width: 640px) {
@@ -1112,7 +1425,7 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
     .toast-notification {
         left: 12px;
         right: 12px;
-        bottom: calc(16px + env(safe-area-inset-bottom));
+        bottom: calc(max(var(--tabbar-space), env(safe-area-inset-bottom)) + 12px);
         text-align: center;
     }
 
@@ -1127,77 +1440,105 @@ input:focus, textarea:focus, select:focus { border-color: var(--accent); }
 /* Écrans tactiles : cibles élargies et surbrillances de survol neutralisées — sur mobile un
    :hover reste « collé » après un tap. */
 @media (hover: none) {
-    .btn { min-height: 40px; }
-    .queue-btn { width: 36px; height: 36px; }
+    .btn { min-height: var(--t2-cible); }
+    .queue-btn { width: var(--t2-cible); height: var(--t2-cible); }
     .select-checkbox { width: 22px; height: 22px; }
     .token { padding: 6px 10px; }
 
-    .queue-btn:hover:not(:disabled) { background: var(--border); }
-    .queue-btn.danger:hover:not(:disabled) { background: var(--border); }
+    .btn-primary:hover:not(:disabled) { background: var(--t2-action); }
+    .btn-secondary:hover:not(:disabled) { background: var(--t2-verre); }
+    .btn-danger:hover:not(:disabled),
+    .btn-outline:hover:not(:disabled) { background: transparent; }
+    .queue-btn:hover:not(:disabled) { background: var(--t2-verre); }
+    .queue-btn.danger:hover:not(:disabled) { background: var(--t2-verre); box-shadow: none; }
     .search-result-row:hover { background: transparent; }
-    .search-result-row.selected:hover { background: rgba(233,69,96,0.1); }
-    .artist-row.expanded:hover { background: rgba(233,69,96,0.08); }
-    .nav-link:hover { background: none; color: var(--text-secondary); }
-    .nav-link.active:hover { background: rgba(233,69,96,0.2); color: var(--accent); }
+    .search-result-row.selected:hover { background: var(--t2-verre); }
+    .artist-row.expanded:hover { background: var(--t2-survol); }
+    .nav-link:hover { background: none; color: var(--t2-texte-2); }
+    .nav-link.active:hover { background: var(--t2-verre-fort); color: var(--t2-texte); }
+    .now-card:hover { background: var(--t2-verre); }
+    .user-label-alert:hover { background: var(--t2-action); }
+    .lang-switch button:not(.active):hover { color: var(--t2-texte-2); }
+    .template-help-toggle:hover { color: var(--t2-texte); }
     .token:hover {
-        border-color: var(--border);
-        color: #7ec8e3;
-        background: var(--bg-input);
-        transform: none;
+        border-color: transparent;
+        color: var(--t2-texte);
+        background: var(--t2-verre);
     }
 }
 
-/* ── Voile de reconnexion ──────────────────────────────────────────────────────
+/* ── Bandeau de reconnexion ────────────────────────────────────────────────────
    Blazor pose lui-même les classes components-reconnect-{show,failed,rejected} sur
-   #components-reconnect-modal ; on ne fait que les habiller. Le lien avec le thème compte
-   ici plus qu'ailleurs : c'est l'écran que l'application mobile montre le plus souvent,
-   à chaque retour au premier plan. */
+   #components-reconnect-modal ; on ne fait que les habiller. Bandeau discret en haut de la page,
+   qui ne masque plus l'écran : c'est ce que l'application mobile montre le plus souvent, à chaque
+   retour au premier plan. Seule animation : la rotation CSS de l'indicateur. */
 #components-reconnect-modal { display: none; }
 
 #components-reconnect-modal.components-reconnect-show,
 #components-reconnect-modal.components-reconnect-failed,
 #components-reconnect-modal.components-reconnect-rejected {
     display: flex;
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    align-items: center;
     justify-content: center;
-    background: rgba(26, 26, 46, 0.94);
-    padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom));
+    position: fixed;
+    top: calc(8px + env(safe-area-inset-top));
+    left: 12px;
+    right: 12px;
+    z-index: 1000;
+    pointer-events: none;
 }
 
 .reconnect-card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 24px;
-    max-width: 320px;
-    text-align: center;
-    color: var(--text-primary);
-    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 100%;
+    min-height: var(--t2-cible);
+    padding: 0 6px 0 16px;
+    border-radius: 22px;
+    background: rgba(22, 23, 30, .86);
+    -webkit-backdrop-filter: blur(var(--t2-verre-flou)) saturate(1.4);
+    backdrop-filter: blur(var(--t2-verre-flou)) saturate(1.4);
+    box-shadow: var(--t2-reflet), 0 10px 30px -12px rgba(0, 0, 0, .8);
+    color: var(--t2-texte);
+    font: 600 13.5px/1.25 var(--t2-texte-police);
+    pointer-events: auto;
 }
 
 /* Un seul des trois messages est visible, selon l'état posé par Blazor. */
-#components-reconnect-modal [data-state] { display: none; margin-bottom: 14px; }
+#components-reconnect-modal [data-state] { display: none; padding: 8px 0; }
 #components-reconnect-modal.components-reconnect-show [data-state="show"] { display: block; }
 #components-reconnect-modal.components-reconnect-failed [data-state="failed"] { display: block; }
 #components-reconnect-modal.components-reconnect-rejected [data-state="rejected"] { display: block; }
 
-/* Le rechargement est automatique ; le bouton n'est là que si le script a été empêché
-   d'agir (hors ligne, ou garde-fou anti-boucle déclenché). */
-#components-reconnect-modal .reconnect-reload { display: none; }
-#components-reconnect-modal.components-reconnect-failed .reconnect-reload,
-#components-reconnect-modal.components-reconnect-rejected .reconnect-reload { display: inline-block; }
+/* Le rechargement reste automatique (script de _Host.cshtml) ; le lien « Recharger » permet de
+   ne pas attendre, et sert de secours si le script a été empêché d'agir (hors ligne, ou
+   garde-fou anti-boucle déclenché). */
+.reconnect-reload {
+    flex-shrink: 0;
+    min-height: var(--t2-cible);
+    padding: 0 12px;
+    border: none;
+    background: none;
+    color: var(--t2-texte);
+    font: 600 13.5px var(--t2-texte-police);
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 255, 255, .4);
+    text-underline-offset: 5px;
+    cursor: pointer;
+}
 
 .reconnect-spinner {
-    width: 28px;
-    height: 28px;
-    margin: 0 auto 14px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    border: 2px solid rgba(255, 255, 255, .3);
+    border-top-color: var(--t2-texte);
     border-radius: 50%;
     animation: reconnect-spin 0.9s linear infinite;
 }
 
 @keyframes reconnect-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+    .reconnect-spinner { animation-duration: 2.4s; }
+}

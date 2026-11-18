@@ -63,6 +63,8 @@ builder.Services.AddSingleton<SearchStateStore>();
 // requête par le middleware de localisation plus bas.
 builder.Services.AddSingleton<LocalizationService>();
 builder.Services.AddScoped<AppGuardService>();
+// Scoped : le mur de pochettes du fond suit la page affichée dans chaque onglet.
+builder.Services.AddScoped<AmbianceService>();
 // Étranglement du déverrouillage : singleton, pour que le compteur ne soit pas remis à zéro
 // par l'ouverture d'un nouvel onglet.
 builder.Services.AddSingleton<AppAccessGate>();

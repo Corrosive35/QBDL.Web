@@ -13,7 +13,7 @@
     @* viewport-fit=cover : sans lui, env(safe-area-inset-*) vaut zéro sur les écrans à encoche.
        Le zoom utilisateur reste autorisé (pas de maximum-scale) pour l'accessibilité. *@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#16213e" />
+    <meta name="theme-color" content="#08090E" />
     <meta name="color-scheme" content="dark" />
     <title>@Loc["app.title"]</title>
     <base href="~/" />
@@ -27,6 +27,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="QBDL" />
 
+    @* Polices auto-hébergées (wwwroot/fonts, licence OFL) : aucune requête vers un service tiers.
+       Seuls les sous-ensembles latins de base sont préchargés ; latin-ext ne se télécharge que si
+       un texte en a besoin (unicode-range). *@
+    <link rel="preload" href="fonts/figtree-latin-wght.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="fonts/syne-latin-wght.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="css/app.css" />
 </head>
 <body>
@@ -34,8 +39,10 @@
 
     @* Blazor bascule lui-même les classes components-reconnect-* sur cet élément. Sans cet
        élément dans le document, il injecte son propre bandeau, gris clair et illisible sur le
-       thème sombre. *@
-    <div id="components-reconnect-modal" class="reconnect-overlay">
+       thème sombre. Présenté en bandeau discret en haut de page (app.css), sans masquer
+       l'écran : l'identifiant, les classes d'état et les textes restent ceux d'avant, et le
+       script de reprise plus bas (window.qbdlxResume) n'en dépend pas autrement. *@
+    <div id="components-reconnect-modal" class="reconnect-overlay" role="status" aria-live="polite">
         <div class="reconnect-card">
             <div class="reconnect-spinner" aria-hidden="true"></div>
             <p data-state="show">
@@ -44,7 +51,7 @@
             </p>
             <p data-state="failed">@Loc["reconnect.failed"]</p>
             <p data-state="rejected">@Loc["reconnect.rejected"]</p>
-            <button type="button" class="btn btn-primary reconnect-reload" onclick="location.reload()">@Loc["reconnect.reload"]</button>
+            <button type="button" class="reconnect-reload" onclick="location.reload()">@Loc["reconnect.reload"]</button>
         </div>
     </div>
 
