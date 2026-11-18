@@ -5,8 +5,12 @@
   "nav.download": "Téléchargement",
   "nav.settings": "Paramètres",
   "nav.logout": "Déconnexion",
-  "nav.menu": "Ouvrir le menu",
+  "nav.main": "Navigation principale",
   "nav.users": "Utilisateurs",
+  "shell.now": "En cours",
+  "shell.now.aria": "En cours : {0}, {1} %",
+  "session.title": "Session",
+  "session.language": "Langue",
   "nav.qobuzAccount": "Compte Qobuz partagé par tous les utilisateurs",
   "nav.logoutAs": "Se déconnecter ({0})",
 

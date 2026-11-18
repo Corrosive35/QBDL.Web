@@ -5,8 +5,12 @@
   "nav.download": "Downloads",
   "nav.settings": "Settings",
   "nav.logout": "Log out",
-  "nav.menu": "Open menu",
+  "nav.main": "Main navigation",
   "nav.users": "Users",
+  "shell.now": "Now downloading",
+  "shell.now.aria": "Now downloading: {0}, {1}%",
+  "session.title": "Session",
+  "session.language": "Language",
   "nav.qobuzAccount": "Qobuz account shared by all users",
   "nav.logoutAs": "Log out ({0})",
 

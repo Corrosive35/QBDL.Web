@@ -387,6 +387,10 @@
     </form>
 </div>
 
+@* Mobile : la barre latérale cède la place aux onglets, et le bloc Session (langue, déconnexion,
+   version) se retrouve ici. Masqué au bureau, où la barre latérale le porte déjà. *@
+<SessionPanel Class="session-page" />
+
 @if (_showCopied)
 {
     <div class="toast-notification">@Loc.T("settings.copied", _copiedToken)</div>

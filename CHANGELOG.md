@@ -12,8 +12,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `thimble9057/qobuzdlx.web:dev` (amd64 et arm64). Elle ne publie jamais `latest` ni de tag de
   version. Une image dev s'annonce `1.8.0-dev+<commit>` dans la barre latérale et dans `/healthz` ;
   une release continue d'afficher la version seule.
+- **Barre d'onglets sur mobile** : Recherche, Téléchargement (avec le nombre d'éléments restants),
+  Paramètres, et Utilisateurs pour un administrateur. Elle remplace le menu latéral escamotable et
+  se retire pendant la saisie au clavier. Langue, déconnexion et version passent en bas des
+  Paramètres.
+- **Mini-carte « En cours »** dans la barre latérale du bureau : pochette, titre et progression du
+  téléchargement en cours.
+- **Polices Syne (titres) et Figtree (interface)**, auto-hébergées dans `wwwroot/fonts` avec leur
+  licence SIL OFL 1.1 : aucune requête vers un service tiers.
 
 ### Changed
+- **Nouvelle interface, première étape : les fondations.** Fond nuit gravé de sillons de disque,
+  verre dépoli, actions en blanc ; le rose-rouge disparaît. Les pages gardent leur disposition en
+  attendant leur refonte, page par page.
+- **Barre latérale du bureau redessinée** : navigation avec icônes, puis bloc Session en bas
+  (compte, compte Qobuz et abonnement, langue, déconnexion, version).
+- **Reconnexion discrète** : un bandeau en haut de page remplace l'écran plein. Mêmes messages, et
+  le bouton « Recharger » est disponible dès la première tentative.
 - **Image testée avant publication.** Avant de publier, la construction démarre l'image, vérifie
   que `/healthz` annonce `QBDL.Web` avec la version attendue et que la page d'accueil répond. En
   cas d'échec, elle affiche les journaux du conteneur et ne publie rien.
