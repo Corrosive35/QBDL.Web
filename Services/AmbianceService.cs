@@ -13,12 +13,19 @@ public sealed class AmbianceService
 
     private IReadOnlyList<string> _covers = Array.Empty<string>();
 
+    // Page qui a fourni la liste en cours. À la navigation, la nouvelle page est initialisée avant
+    // que l'ancienne ne soit libérée : sans ce propriétaire, le Clear de l'ancienne effacerait les
+    // pochettes que la nouvelle vient de poser.
+    private object? _owner;
+
     public IReadOnlyList<string> Covers => _covers;
 
     public event Action? Changed;
 
-    public void SetCovers(IEnumerable<string?>? urls)
+    public void SetCovers(object owner, IEnumerable<string?>? urls)
     {
+        _owner = owner;
+
         // Adresses absolues http(s) uniquement : la liste vient des réponses de l'API Qobuz, mais
         // finit dans un attribut src.
         var covers = (urls ?? Enumerable.Empty<string?>())
@@ -34,5 +41,11 @@ public sealed class AmbianceService
         Changed?.Invoke();
     }
 
-    public void Clear() => SetCovers(null);
+    /// <summary>Retire le mur, seulement si c'est encore celui de cette page.</summary>
+    public void Clear(object owner)
+    {
+        if (!ReferenceEquals(_owner, owner)) return;
+        SetCovers(owner, null);
+        _owner = null;
+    }
 }
