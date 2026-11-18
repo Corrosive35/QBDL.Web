@@ -18,8 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Paramètres.
 - **Mini-carte « En cours »** dans la barre latérale du bureau : pochette, titre et progression du
   téléchargement en cours.
-- **Polices Syne (titres) et Figtree (interface)**, auto-hébergées dans `wwwroot/fonts` avec leur
-  licence SIL OFL 1.1 : aucune requête vers un service tiers.
+- **Police Space Grotesk**, seule police de l'interface (titres et texte), auto-hébergée dans
+  `wwwroot/fonts` avec sa licence SIL OFL 1.1 : aucune requête vers un service tiers. Échelle
+  resserrée : titres de page de 27 à 34 px, texte courant à 14 px, graisses de 400 à 600.
+  Chiffres tabulaires pour les valeurs qui changent en direct (pourcentages, compteurs, débit).
 
 ### Changed
 - **Nouvelle interface, première étape : les fondations.** Fond nuit gravé de sillons de disque,

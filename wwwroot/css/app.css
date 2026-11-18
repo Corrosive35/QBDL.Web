@@ -1,47 +1,29 @@
 /* ──────────────────────────────────────────────────────────────────────────
    QBDL · T2 « Ambiance pochette »
 
-   Polices auto-hébergées (wwwroot/fonts, licence SIL OFL 1.1 à côté de chaque fichier) : Syne
-   pour les titres, Figtree pour l'interface, en woff2 variables (une graisse = un fichier pour
-   toute la plage). La chasse fixe reste celle du système. Aucune requête vers Google Fonts.
+   Police unique auto-hébergée : Space Grotesk (wwwroot/fonts, licence SIL OFL 1.1 à côté), en
+   woff2 variable (300 à 700 dans un seul fichier), pour les titres comme pour le texte. Ses
+   chiffres par défaut sont proportionnels, mais le fichier latin porte la fonctionnalité tnum :
+   font-variant-numeric: tabular-nums (html, body) aligne pourcentages, débits et compteurs.
+   La chasse fixe reste celle du système. Aucune requête vers Google Fonts.
    ────────────────────────────────────────────────────────────────────────── */
 @font-face {
-    font-family: 'Syne';
+    font-family: 'Space Grotesk';
     font-style: normal;
     font-display: swap;
-    font-weight: 400 800;
-    src: url('../fonts/syne-latin-wght.woff2') format('woff2-variations'),
-         url('../fonts/syne-latin-wght.woff2') format('woff2');
+    font-weight: 300 700;
+    src: url('../fonts/space-grotesk-latin-wght.woff2') format('woff2-variations'),
+         url('../fonts/space-grotesk-latin-wght.woff2') format('woff2');
     unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
 @font-face {
-    font-family: 'Syne';
+    font-family: 'Space Grotesk';
     font-style: normal;
     font-display: swap;
-    font-weight: 400 800;
-    src: url('../fonts/syne-latin-ext-wght.woff2') format('woff2-variations'),
-         url('../fonts/syne-latin-ext-wght.woff2') format('woff2');
-    unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
-}
-
-@font-face {
-    font-family: 'Figtree';
-    font-style: normal;
-    font-display: swap;
-    font-weight: 300 900;
-    src: url('../fonts/figtree-latin-wght.woff2') format('woff2-variations'),
-         url('../fonts/figtree-latin-wght.woff2') format('woff2');
-    unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
-}
-
-@font-face {
-    font-family: 'Figtree';
-    font-style: normal;
-    font-display: swap;
-    font-weight: 300 900;
-    src: url('../fonts/figtree-latin-ext-wght.woff2') format('woff2-variations'),
-         url('../fonts/figtree-latin-ext-wght.woff2') format('woff2');
+    font-weight: 300 700;
+    src: url('../fonts/space-grotesk-latin-ext-wght.woff2') format('woff2-variations'),
+         url('../fonts/space-grotesk-latin-ext-wght.woff2') format('woff2');
     unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
@@ -70,9 +52,18 @@
     --t2-rayon-pilule: 999px;
     --t2-cible: 44px;
     /* Typographie */
-    --t2-titre: 'Syne', system-ui, sans-serif;
-    --t2-texte-police: 'Figtree', system-ui, sans-serif;
+    --t2-titre: 'Space Grotesk', system-ui, sans-serif;
+    --t2-texte-police: 'Space Grotesk', system-ui, sans-serif;
     --t2-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+    /* Échelle typographique (Space Grotesk) : titres en 600, texte de 400 à 600, jamais plus. */
+    --t2-taille-page: clamp(27px, 1.5vw + 21px, 34px);    /* titre de page */
+    --t2-taille-album: clamp(24px, 1vw + 20px, 30px);     /* titre de la carte « En cours » */
+    --t2-taille-pct: clamp(44px, 2vw + 37px, 56px);       /* grand pourcentage */
+    --t2-taille-section: 20px;                             /* titre de section (File, Journal) */
+    --t2-taille-titre: 15px;                               /* titre de carte ou de ligne (14 sur mobile) */
+    --t2-taille-texte: 14px;                               /* texte courant */
+    --t2-taille-2: 13px;                                   /* secondaire, capsules */
+    --t2-taille-cap: 11.5px;                               /* libellés en capitales (11 sur mobile) */
 
     /* Compléments propres à l'application, dans la même gamme. */
     --t2-survol: rgba(255, 255, 255, .06);     /* survol d'une ligne, ligne dépliée */
@@ -113,7 +104,7 @@ html, body {
 
 button, input, select, textarea { font-family: inherit; }
 
-h1, h2, h3 { font-family: var(--t2-titre); letter-spacing: -.02em; }
+h1, h2, h3, h4 { font-family: var(--t2-titre); font-weight: 600; letter-spacing: -.02em; }
 
 /* Focus clavier : un contour blanc décalé, et non une ombre, pour ne pas être écrasé par les
    box-shadow (reflets, contours) que portent la plupart des boutons. Les champs ont leur propre
@@ -216,8 +207,8 @@ input:focus-visible, textarea:focus-visible { outline: none; }
     display: block;
     padding: 0 16px;
     margin-bottom: 22px;
-    font: 800 30px/1 var(--t2-titre);
-    letter-spacing: -.04em;
+    font: 600 26px/1 var(--t2-titre);
+    letter-spacing: -.02em;
     color: var(--t2-texte);
     text-decoration: none;
 }
@@ -232,13 +223,13 @@ input:focus-visible, textarea:focus-visible { outline: none; }
     padding: 0 16px;
     border-radius: 24px;
     color: var(--t2-texte-2);
-    font: 600 15px var(--t2-texte-police);
+    font: 500 var(--t2-taille-texte) var(--t2-texte-police);
     text-decoration: none;
     transition: background .15s, color .15s;
 }
 
 .nav-link:hover { background: var(--t2-survol); color: var(--t2-texte); }
-.nav-link.active { background: var(--t2-verre-fort); color: var(--t2-texte); }
+.nav-link.active { background: var(--t2-verre-fort); color: var(--t2-texte); font-weight: 600; }
 .nav-icon { flex-shrink: 0; }
 
 /* Pastille du menu : le compteur des éléments restants, poussée contre le bord droit. */
@@ -250,7 +241,7 @@ input:focus-visible, textarea:focus-visible { outline: none; }
     border-radius: 11px;
     background: var(--t2-action);
     color: var(--t2-action-texte);
-    font: 700 12px/22px var(--t2-texte-police);
+    font: 600 12px/22px var(--t2-texte-police);
     text-align: center;
 }
 
@@ -287,20 +278,20 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 .now-card-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 
 .now-card-cap {
-    font: 600 10.5px/1 var(--t2-texte-police);
+    font: 600 var(--t2-taille-cap)/1 var(--t2-texte-police);
     letter-spacing: .16em;
     text-transform: uppercase;
     color: var(--t2-texte-2);
 }
 
 .now-card-title {
-    font: 650 14.5px/1.2 var(--t2-texte-police);
+    font: 600 var(--t2-taille-titre)/1.25 var(--t2-texte-police);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
-.now-card-pct { flex-shrink: 0; font: 800 20px/1 var(--t2-titre); }
+.now-card-pct { flex-shrink: 0; font: 600 18px/1 var(--t2-titre); }
 .now-card-pct small { font-size: 11px; }
 
 .now-card-bar {
@@ -340,7 +331,7 @@ input:focus-visible, textarea:focus-visible { outline: none; }
     justify-content: center;
     background: var(--t2-verre);
     box-shadow: var(--t2-reflet);
-    font: 700 15px var(--t2-texte-police);
+    font: 600 15px var(--t2-texte-police);
 }
 
 .session-id { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
@@ -353,8 +344,8 @@ input:focus-visible, textarea:focus-visible { outline: none; }
     text-overflow: ellipsis;
 }
 
-.session-id strong { font: 650 15px/1.2 var(--t2-texte-police); }
-.session-qobuz { font-size: 12.5px; color: var(--t2-texte-2); }
+.session-id strong { font: 600 var(--t2-taille-titre)/1.25 var(--t2-texte-police); }
+.session-qobuz { font-size: var(--t2-taille-2); color: var(--t2-texte-2); }
 
 .session-role {
     flex-shrink: 0;
@@ -362,7 +353,7 @@ input:focus-visible, textarea:focus-visible { outline: none; }
     padding: 0 10px;
     border-radius: var(--t2-rayon-pilule);
     box-shadow: inset 0 0 0 1.5px var(--t2-texte);
-    font: 650 11.5px/24px var(--t2-texte-police);
+    font: 600 11.5px/24px var(--t2-texte-police);
 }
 
 .session-lang {
@@ -387,7 +378,7 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 /* Libellé de l'offre sous le compte : « Studio », « Sublime »… */
 .user-label {
     display: inline-block;
-    font-size: 12.5px;
+    font-size: var(--t2-taille-2);
     color: var(--t2-texte-2);
 }
 
@@ -398,7 +389,7 @@ input:focus-visible, textarea:focus-visible { outline: none; }
     border-radius: var(--t2-rayon-pilule);
     background: var(--t2-action);
     color: var(--t2-action-texte);
-    font-weight: 700;
+    font-weight: 600;
     text-decoration: none;
 }
 
@@ -456,11 +447,12 @@ input:focus-visible, textarea:focus-visible { outline: none; }
     gap: 4px;
     padding: 0 2px;
     color: var(--t2-texte-2);
-    font: 600 10.5px/1.1 var(--t2-texte-police);
+    /* 10,5 px : « Téléchargement » doit tenir dans un quart d'écran de téléphone. */
+    font: 500 10.5px/1.1 var(--t2-texte-police);
     text-decoration: none;
 }
 
-.tab.active { background: var(--t2-verre-fort); color: var(--t2-texte); font-weight: 700; }
+.tab.active { background: var(--t2-verre-fort); color: var(--t2-texte); font-weight: 600; }
 
 .tab-icon { position: relative; display: inline-flex; }
 
@@ -476,7 +468,7 @@ input:focus-visible, textarea:focus-visible { outline: none; }
     border-radius: 9px;
     background: var(--t2-action);
     color: var(--t2-action-texte);
-    font: 700 10.5px/17px var(--t2-texte-police);
+    font: 600 10.5px/17px var(--t2-texte-police);
     text-align: center;
 }
 
@@ -511,8 +503,8 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 .auth-head { text-align: center; margin-bottom: 20px; }
 
 .auth-logo {
-    font: 800 40px/1 var(--t2-titre);
-    letter-spacing: -.04em;
+    font: 600 var(--t2-taille-page)/1 var(--t2-titre);
+    letter-spacing: -.02em;
     color: var(--t2-texte);
 }
 
@@ -529,8 +521,8 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 
 /* Titre de page : les pages posent un <h3> en tête de leur contenu. */
 .main-content > h3 {
-    font: 800 clamp(34px, 5.2vw, 64px)/.95 var(--t2-titre);
-    letter-spacing: -.035em;
+    font: 600 var(--t2-taille-page)/1.1 var(--t2-titre);
+    letter-spacing: -.02em;
     overflow-wrap: anywhere;
 }
 
@@ -549,7 +541,7 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 /* Flex plutôt que des flottants : les outils (tri, tout sélectionner) peuvent ainsi passer à la
    ligne sur écran étroit au lieu de chevaucher le titre. */
 .card-title {
-    font: 600 11px/1.2 var(--t2-texte-police);
+    font: 600 var(--t2-taille-cap)/1.2 var(--t2-texte-police);
     text-transform: uppercase;
     color: var(--t2-texte-2);
     letter-spacing: .16em;
@@ -570,7 +562,7 @@ textarea, select {
     min-height: var(--t2-cible);
     padding: 10px 18px;
     width: 100%;
-    font: 500 15px var(--t2-texte-police);
+    font: 400 var(--t2-taille-texte) var(--t2-texte-police);
     outline: none;
     transition: border-color .2s;
 }
@@ -595,7 +587,7 @@ select option { background: var(--t2-nuit); color: var(--t2-texte); }
     padding: 8px 18px;
     border: none;
     border-radius: var(--t2-rayon-pilule);
-    font: 650 14px/1.15 var(--t2-texte-police);
+    font: 600 var(--t2-taille-texte)/1.15 var(--t2-texte-police);
     cursor: pointer;
     transition: background .15s, color .15s, opacity .15s;
 }
@@ -642,7 +634,7 @@ select option { background: var(--t2-nuit); color: var(--t2-texte); }
     align-items: center;
     gap: 14px;
     min-height: var(--t2-cible);
-    font: 500 15px/1.3 var(--t2-texte-police);
+    font: 400 var(--t2-taille-texte)/1.35 var(--t2-texte-police);
     cursor: pointer;
 }
 
@@ -679,7 +671,7 @@ select option { background: var(--t2-nuit); color: var(--t2-texte); }
 .form-group label {
     display: block;
     margin-bottom: 8px;
-    font: 600 10.5px/1.2 var(--t2-texte-police);
+    font: 600 var(--t2-taille-cap)/1.2 var(--t2-texte-police);
     letter-spacing: .16em;
     text-transform: uppercase;
     color: var(--t2-texte-2);
@@ -701,7 +693,7 @@ select {
    voisins pour que la grille ne se désaligne pas. */
 .account-value {
     padding: 2px 0 6px;
-    font: 600 16px/1.3 var(--t2-texte-police);
+    font: 600 var(--t2-taille-titre)/1.3 var(--t2-texte-police);
     color: var(--t2-texte);
     overflow-wrap: anywhere;
 }
@@ -838,7 +830,7 @@ select {
     border: none;
     border-radius: 0;
     background: none;
-    font: 500 18px var(--t2-texte-police);
+    font: 400 16px var(--t2-texte-police);
 }
 
 .search-field input[type="text"]:focus,
@@ -853,11 +845,11 @@ select {
     border: none;
     background: none;
     color: var(--t2-texte-2);
-    font: 500 17px var(--t2-texte-police);
+    font: 500 15px var(--t2-texte-police);
     cursor: pointer;
 }
 
-.search-tab.on { font-weight: 700; color: var(--t2-texte); box-shadow: inset 0 -2px 0 var(--t2-texte); }
+.search-tab.on { font-weight: 600; color: var(--t2-texte); box-shadow: inset 0 -2px 0 var(--t2-texte); }
 .search-tab:disabled { cursor: progress; }
 
 .search-status { padding: 4px 0 18px; font-size: 14px; color: var(--t2-texte-2); }
@@ -874,7 +866,7 @@ select {
 }
 
 .results-count {
-    font: 600 10.5px/1 var(--t2-texte-police);
+    font: 600 var(--t2-taille-cap)/1 var(--t2-texte-police);
     letter-spacing: .16em;
     text-transform: uppercase;
     color: var(--t2-texte-2);
@@ -909,9 +901,9 @@ select {
 .alb-titre,
 .alb-sous { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.alb-titre { font: 650 15.5px/1.2 var(--t2-texte-police); }
-.alb-sous { margin-top: 3px; font: 400 12.5px/1.35 var(--t2-texte-police); color: var(--t2-texte-2); }
-.alb-format { margin-top: 2px; font: 650 12.5px/1.35 var(--t2-texte-police); }
+.alb-titre { font: 600 var(--t2-taille-titre)/1.25 var(--t2-texte-police); }
+.alb-sous { margin-top: 3px; font: 400 var(--t2-taille-2)/1.35 var(--t2-texte-police); color: var(--t2-texte-2); }
+.alb-format { margin-top: 2px; font: 600 var(--t2-taille-2)/1.35 var(--t2-texte-police); }
 .r-etat { font-weight: 500; color: var(--t2-texte-2); }
 
 /* Capsule C1 : choisir | télécharger, deux moitiés de 44 px sous la méta. */
@@ -943,7 +935,7 @@ select {
 .alb-caps button + button { box-shadow: inset 1px 0 0 var(--t2-filet); }
 .alb-caps button:hover:not(:disabled) { background: var(--t2-survol); }
 .alb-caps .alb-caps-sel { flex: 0 0 52px; }
-.alb-caps .alb-caps-dl { font-size: 12.5px; white-space: nowrap; }
+.alb-caps .alb-caps-dl { font-size: var(--t2-taille-2); white-space: nowrap; }
 .alb-caps .alb-caps-dl span { overflow: hidden; text-overflow: ellipsis; }
 .alb-caps .nav-icon { width: 16px; height: 16px; flex-shrink: 0; }
 
@@ -990,9 +982,9 @@ select {
 .rt,
 .rm { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.rt { font: 650 15.5px/1.2 var(--t2-texte-police); }
-.rm { margin-top: 3px; font: 400 12.5px/1.35 var(--t2-texte-police); color: var(--t2-texte-2); }
-.r-format { margin-top: 2px; font: 650 12px/1.35 var(--t2-texte-police); }
+.rt { font: 600 var(--t2-taille-titre)/1.25 var(--t2-texte-police); }
+.rm { margin-top: 3px; font: 400 var(--t2-taille-2)/1.35 var(--t2-texte-police); color: var(--t2-texte-2); }
+.r-format { margin-top: 2px; font: 600 var(--t2-taille-2)/1.35 var(--t2-texte-police); }
 
 .vg {
     display: block;
@@ -1044,7 +1036,7 @@ select {
     align-items: center;
     justify-content: center;
     background: var(--t2-verre-fort);
-    font: 700 18px var(--t2-titre);
+    font: 600 18px var(--t2-titre);
 }
 
 .expand-icon { display: inline-flex; color: var(--t2-texte-2); transition: transform .2s; }
@@ -1288,7 +1280,7 @@ select {
     height: 24px;
     padding: 0 10px;
     border-radius: var(--t2-rayon-pilule);
-    font: 650 11.5px/1 var(--t2-texte-police);
+    font: 600 11.5px/1 var(--t2-texte-police);
     white-space: nowrap;
     color: var(--t2-texte);
 }
@@ -1302,7 +1294,7 @@ select {
 .bdg.ann { color: var(--t2-texte-2); text-decoration: line-through; text-decoration-thickness: 1px; }
 .bdg.ann i { background: transparent; box-shadow: inset 0 0 0 1.5px currentColor; }
 
-/* En-tête de section : titre Syne, compteur, liens d'action à droite. */
+/* En-tête de section : titre, compteur, liens d'action à droite. */
 .section-head {
     display: flex;
     align-items: center;
@@ -1313,7 +1305,7 @@ select {
     border-bottom: 1px solid var(--t2-filet);
 }
 
-.section-title { font: 800 28px/1 var(--t2-titre); letter-spacing: -.03em; }
+.section-title { font: 600 var(--t2-taille-section)/1.1 var(--t2-titre); letter-spacing: -.02em; }
 .section-count { font-size: 13px; color: var(--t2-texte-2); }
 .section-tools { margin-left: auto; display: flex; flex-wrap: wrap; gap: 4px 18px; }
 
@@ -1368,9 +1360,9 @@ select {
     --sortie: 200px;
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
-    gap: 28px 44px;
+    gap: 24px 36px;
     align-items: start;
-    margin: 32px 0 40px;
+    margin: 28px 0 36px;
 }
 
 .sortie { position: relative; width: calc(var(--sortie) * 1.48); height: var(--sortie); }
@@ -1442,31 +1434,31 @@ select {
 .now-info { min-width: 0; display: flex; flex-direction: column; }
 
 .now-cap {
-    font: 600 10.5px/1 var(--t2-texte-police);
+    font: 600 var(--t2-taille-cap)/1 var(--t2-texte-police);
     letter-spacing: .16em;
     text-transform: uppercase;
     color: var(--t2-texte-2);
 }
 
 .now-title {
-    margin-top: 12px;
-    font: 800 clamp(30px, 3.6vw, 52px)/.95 var(--t2-titre);
-    letter-spacing: -.035em;
+    margin-top: 10px;
+    font: 600 var(--t2-taille-album)/1.1 var(--t2-titre);
+    letter-spacing: -.02em;
     overflow-wrap: anywhere;
 }
 
-.now-artist { margin-top: 10px; font-size: 17px; }
-.now-meta { margin-top: 6px; font-size: 13.5px; color: var(--t2-texte-2); }
+.now-artist { margin-top: 8px; font-size: 15px; }
+.now-meta { margin-top: 4px; font-size: var(--t2-taille-2); color: var(--t2-texte-2); }
 .now-meta strong { color: var(--t2-texte); }
 
 .now-pct {
     align-self: flex-end;
-    margin-top: -8px;
-    font: 800 clamp(56px, 7vw, 104px)/.85 var(--t2-titre);
-    letter-spacing: -.04em;
+    margin-top: 4px;
+    font: 600 var(--t2-taille-pct)/.95 var(--t2-titre);
+    letter-spacing: -.02em;
 }
 
-.now-pct small { font-size: .32em; letter-spacing: 0; }
+.now-pct small { font-size: .4em; letter-spacing: 0; }
 
 .now-progress { margin-top: 16px; }
 
@@ -1484,7 +1476,7 @@ select {
     flex-wrap: wrap;
     gap: 4px 12px;
     margin-top: 12px;
-    font-size: 13.5px;
+    font-size: var(--t2-taille-2);
 }
 
 .now-item { color: var(--t2-texte-2); min-width: 0; overflow-wrap: anywhere; }
@@ -1542,7 +1534,7 @@ select {
 
 .qrow-text { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; }
 .qrow-text .bdg { margin-top: 6px; }
-.qrow-err { margin-top: 4px; font-size: 12.5px; font-style: italic; overflow-wrap: anywhere; }
+.qrow-err { margin-top: 4px; font-size: var(--t2-taille-2); font-style: italic; overflow-wrap: anywhere; }
 
 .qrow-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
 
@@ -1571,7 +1563,7 @@ select {
 
 .settings-cols > .card > .card-title {
     margin-bottom: 14px;
-    font: 700 19px/1.1 var(--t2-titre);
+    font: 600 17px/1.2 var(--t2-titre);
     letter-spacing: -.02em;
     text-transform: none;
     color: var(--t2-texte);
@@ -1593,14 +1585,14 @@ select {
 
 /* ── Utilisateurs ─────────────────────────────────────────────────────────── */
 .users-page > h3 {
-    font: 800 clamp(34px, 5.2vw, 64px)/.95 var(--t2-titre);
-    letter-spacing: -.035em;
+    font: 600 var(--t2-taille-page)/1.1 var(--t2-titre);
+    letter-spacing: -.02em;
 }
 
 .users-list .user-row { padding: 12px 0; border-bottom-color: var(--t2-filet); }
 .users-list .session-avatar { flex-shrink: 0; }
 
-.user-info .title { font: 650 15.5px/1.2 var(--t2-texte-police); }
+.user-info .title { font: 600 var(--t2-taille-titre)/1.25 var(--t2-texte-police); }
 
 .user-role {
     padding: 0 10px;
@@ -1641,7 +1633,7 @@ select {
     padding: 12px 20px;
     border-radius: var(--t2-rayon-pilule);
     font-size: 14px;
-    font-weight: 650;
+    font-weight: 600;
     z-index: 9999;
     animation: toastIn 0.3s ease, toastOut 0.3s ease 1.2s forwards;
     box-shadow: 0 8px 20px -8px rgba(0, 0, 0, .6);
@@ -1678,6 +1670,12 @@ select {
    ────────────────────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
+    /* Échelle mobile : titres de carte et libellés en capitales d'un cran plus petits. */
+    :root {
+        --t2-taille-titre: 14px;
+        --t2-taille-cap: 11px;
+    }
+
     /* Contenu au-dessus, barre d'onglets en bas, dans le flux : elle ne recouvre jamais la fin
        de la page. 74px = onglets (52) + marges internes (12) + marge basse (10). */
     #app {
@@ -1751,7 +1749,6 @@ select {
 
     .sort-select { font-size: 14px; }
 
-    .main-content > h3 { font-size: 34px; }
 }
 
 @media (max-width: 640px) {
@@ -1778,6 +1775,11 @@ select {
     .qrow { column-gap: 10px; }
     .qrow-thumb { width: 44px; height: 44px; }
     .qrow { grid-template-columns: 44px minmax(0, 1fr) auto; }
+}
+
+/* Très petits écrans : la capsule garde le mot « Télécharger » plutôt que l'icône. */
+@media (max-width: 380px) {
+    .alb-caps .alb-caps-dl .nav-icon { display: none; }
 }
 
 @media (max-width: 480px) {
@@ -1863,7 +1865,7 @@ select {
     backdrop-filter: blur(var(--t2-verre-flou)) saturate(1.4);
     box-shadow: var(--t2-reflet), 0 10px 30px -12px rgba(0, 0, 0, .8);
     color: var(--t2-texte);
-    font: 600 13.5px/1.25 var(--t2-texte-police);
+    font: 500 var(--t2-taille-2)/1.25 var(--t2-texte-police);
     pointer-events: auto;
 }
 
@@ -1883,7 +1885,7 @@ select {
     border: none;
     background: none;
     color: var(--t2-texte);
-    font: 600 13.5px var(--t2-texte-police);
+    font: 600 var(--t2-taille-2) var(--t2-texte-police);
     text-decoration: underline;
     text-decoration-color: rgba(255, 255, 255, .4);
     text-underline-offset: 5px;
@@ -1908,5 +1910,15 @@ select {
 
 /* Grands écrans : la carte « En cours » prend l'ampleur des maquettes bureau. */
 @media (min-width: 1200px) {
-    .now-panel { --sortie: 300px; }
+    .now-panel { --sortie: 260px; }
+}
+
+/* Chiffres tabulaires pour les valeurs qui changent en direct. Le raccourci « font: » remet
+   font-variant-numeric à normal : sans cette règle, posée en dernier, ces éléments
+   reprendraient les chiffres proportionnels par défaut de Space Grotesk et feraient sautiller
+   la mise en page à chaque mise à jour. Le fichier latin porte bien la fonctionnalité tnum. */
+:is(.now-pct, .now-card-pct, .now-status, .now-meta, .nav-badge, .tab-badge, .section-count,
+    .results-count, .bdg, .reconnect-card, .toast-notification, .session-version, .alb-format,
+    .r-format, .alb-sous, .rm) {
+    font-variant-numeric: tabular-nums;
 }
