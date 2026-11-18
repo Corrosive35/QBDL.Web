@@ -25,7 +25,9 @@ WORKDIR /app
 # icu-libs + icu-data-full : l'image Alpine tourne en globalization-invariant mode par défaut,
 #   sans quoi aucune culture nommée (fr-FR, en-US) n'existe — formats de nombres et tri
 #   alphabétique tenant compte des accents.
-RUN apk add --no-cache flac icu-libs icu-data-full
+# su-exec : le point d'entrée démarre en root le temps de réparer les droits des volumes, puis
+#   bascule sur qbdlx (voir docker-entrypoint.sh).
+RUN apk add --no-cache flac icu-libs icu-data-full su-exec
 
 # Create non-root user
 RUN addgroup -g 1000 qbdlx && adduser -u 1000 -G qbdlx -D qbdlx
@@ -43,5 +45,12 @@ EXPOSE 8080
 
 VOLUME ["/downloads", "/config"]
 
-USER qbdlx
-ENTRYPOINT ["dotnet", "QBDL.Web.dll"]
+# Pas de USER qbdlx : le point d'entrée démarre en root pour corriger les droits d'un volume que
+# Docker a créé en root sur l'hôte, puis lance l'application sous qbdlx (su-exec). L'application
+# elle-même ne tourne jamais en root ; un conteneur lancé avec --user démarre directement.
+# Le sed retire d'éventuels retours chariot Windows, qui rendraient le script inexécutable.
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && chmod 755 /usr/local/bin/docker-entrypoint.sh
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["dotnet", "QBDL.Web.dll"]

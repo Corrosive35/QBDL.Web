@@ -44,6 +44,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gris et floutées.
 
 ### Fixed
+- **Plantage en boucle au démarrage quand le dossier de configuration n'existait pas sur
+  l'hôte.** Docker le créait au nom de root, et l'application, qui tourne en `qbdlx` (UID 1000),
+  ne pouvait pas y écrire. L'image démarre désormais en root le temps de reprendre `/config` et le
+  seul dossier `/downloads` (jamais son contenu), puis lance l'application en `qbdlx`. Rien ne
+  change quand les droits sont déjà bons, ni quand le conteneur est lancé avec `--user`. Si la
+  correction est impossible (partage réseau, par exemple), un message indique la commande
+  `chown` à lancer sur l'hôte.
 - Dans les Paramètres, cliquer sur le libellé d'une case la coche désormais (il n'y était pas
   relié).
 - Les variables de modèle (Paramètres → Modèles) se copient aussi au clavier.

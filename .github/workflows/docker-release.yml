@@ -14,8 +14,9 @@
 #
 # Test avant publication (dev, tags et lancement manuel) : l'image amd64 est chargée sur le
 # runner et démarrée ; /healthz doit répondre « QBDL.Web » avec la version attendue, et la page
-# d'accueil doit répondre. En cas d'échec, les journaux du conteneur sont affichés et rien n'est
-# publié.
+# d'accueil doit répondre. Elle est démarrée une seconde fois avec /config et /downloads
+# appartenant à root, comme quand Docker crée un dossier d'hôte absent. En cas d'échec, les
+# journaux du conteneur sont affichés et rien n'est publié.
 #
 # Lancement manuel (onglet Actions → « Docker image » → « Run workflow ») : même construction et
 # même test, mais rien n'est publié. Utile pour vérifier qu'une branche compile avant de poser le
@@ -162,6 +163,49 @@ jobs:
           echo "Page d'accueil : HTTP $code"
 
           docker rm -f qbdl-web-test > /dev/null
+
+      # Cas réel : Docker crée en root un dossier d'hôte absent. Le point d'entrée doit reprendre
+      # /config (récursivement) et le seul dossier /downloads (sans toucher à son contenu), puis
+      # lancer l'application sous qbdlx, jamais en root.
+      - name: "Test : volumes créés par root"
+        run: |
+          fail() {
+            echo "::error::$1"
+            echo "----- Journaux du conteneur -----"
+            docker logs qbdl-web-root 2>&1 || true
+            exit 1
+          }
+
+          cfg=$(mktemp -d)
+          dl=$(mktemp -d)
+          sudo mkdir "$dl/bibliotheque"
+          sudo chown root:root "$cfg" "$dl" "$dl/bibliotheque"
+          sudo chmod 755 "$cfg" "$dl" "$dl/bibliotheque"
+
+          docker run -d --name qbdl-web-root -p 8081:8080 -v "$cfg:/config" -v "$dl:/downloads" qbdl-web:test
+
+          ok=""
+          for _ in $(seq 1 60); do
+            if [ "$(docker inspect -f '{{.State.Running}}' qbdl-web-root)" != "true" ]; then
+              fail "Le conteneur s'est arrêté au démarrage avec des volumes appartenant à root."
+            fi
+            if curl -fs --max-time 5 http://localhost:8081/healthz > /dev/null; then
+              ok=1
+              break
+            fi
+            sleep 2
+          done
+          [ -n "$ok" ] || fail "/healthz n'a pas répondu en 2 minutes avec des volumes appartenant à root."
+
+          [ "$(stat -c %u "$cfg")" = "1000" ] || fail "/config n'a pas été repris par 1000."
+          docker exec -u 1000:1000 qbdl-web-root touch /config/.test-ecriture || fail "/config n'est pas inscriptible par 1000."
+          [ "$(stat -c %u "$dl")" = "1000" ] || fail "/downloads n'a pas été repris par 1000."
+          [ "$(stat -c %u "$dl/bibliotheque")" = "0" ] || fail "Le contenu de /downloads a été modifié."
+          # PID 1 est l'application (exec de su-exec) : son propriétaire est l'utilisateur qui la fait tourner.
+          [ "$(docker exec qbdl-web-root stat -c %u /proc/1)" = "1000" ] || fail "L'application tourne en root."
+          echo "Volumes root : /config et /downloads repris par 1000, contenu de /downloads intact, application en 1000."
+
+          docker rm -f qbdl-web-root > /dev/null
 
       - name: Connexion à Docker Hub
         if: steps.version.outputs.publish == 'true'
