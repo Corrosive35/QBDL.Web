@@ -8,9 +8,9 @@
 
 <div class="auth-card">
     <div class="card">
-        <div style="text-align:center;margin-bottom:20px;">
-            <h2 style="color:var(--accent);font-size:1.8em;">QBDL</h2>
-            <p style="color:var(--text-secondary);font-size:0.85em;">@Loc["login.subtitle"]</p>
+        <div class="auth-head">
+            <h2 class="auth-logo">QBDL</h2>
+            <p class="auth-subtitle">@Loc["login.subtitle"]</p>
         </div>
 
         @* Le compte Qobuz est celui de toute l'instance : seul un administrateur le connecte. Les
@@ -25,7 +25,7 @@
         <div class="qobuz-login-form">
         @if (!string.IsNullOrEmpty(_error))
         {
-            <div style="background:rgba(231,76,60,0.15);border:1px solid #c0392b;border-radius:6px;padding:10px;margin-bottom:12px;font-size:0.85em;color:#e74c3c;">
+            <div class="auth-error" role="alert">
                 @_error
             </div>
         }
@@ -60,7 +60,7 @@
         </div>
 
         <details style="margin-top:16px;">
-            <summary style="color:var(--text-secondary);font-size:0.85em;cursor:pointer;">@Loc["login.customCredentials"]</summary>
+            <summary class="auth-more">@Loc["login.customCredentials"]</summary>
             <div style="margin-top:8px;">
                 <div class="form-group">
                     <label>@Loc["login.appId"]</label>
