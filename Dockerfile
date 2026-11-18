@@ -9,7 +9,13 @@ WORKDIR /src
 COPY QBDL.Web.csproj .
 RUN dotnet restore -a $TARGETARCH
 COPY . .
-RUN dotnet publish -c Release -a $TARGETARCH -o /app --no-restore
+# Version affichée (barre latérale, /healthz). Vide par défaut : l'image annonce alors <Version>
+# du csproj, comme une release. Seul le workflow de la branche dev la renseigne
+# (« 1.8.0-dev+<commit> »). Déclarée ici, après la restauration, pour que son changement à chaque
+# commit n'invalide pas le cache du « dotnet restore ».
+ARG APP_VERSION=
+RUN dotnet publish -c Release -a $TARGETARCH -o /app --no-restore \
+    ${APP_VERSION:+"-p:InformationalVersion=$APP_VERSION"}
 
 # Stage 2: Runtime
 FROM mcr.microsoft.com/dotnet/aspnet:8.0-alpine AS runtime

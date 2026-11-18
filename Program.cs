@@ -182,7 +182,7 @@ app.UseRequestLocalization(options =>
 app.MapGet("/healthz", () => Results.Json(new
 {
     app = "QBDL.Web",
-    version = AppVersion()
+    version = AppInfo.Version
 }));
 
 // Déverrouillage par formulaire HTML classique, et non par un gestionnaire Blazor : poser un
@@ -320,12 +320,6 @@ app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
 app.Run();
-
-// Même source que la barre latérale (MainLayout.razor) : la version du csproj, sans la révision.
-static string AppVersion() =>
-    System.Reflection.Assembly.GetExecutingAssembly().GetName().Version is { } v
-        ? $"{v.Major}.{v.Minor}.{v.Build}"
-        : "1.7.0";
 
 // Le cookie porte l'identifiant du compte, pas son nom : l'administrateur peut le renommer sans
 // déconnecter personne. Le cachet fige le hachage du mot de passe (voir OnValidatePrincipal).
