@@ -1294,7 +1294,10 @@ select {
 .bdg.ann { color: var(--t2-texte-2); text-decoration: line-through; text-decoration-thickness: 1px; }
 .bdg.ann i { background: transparent; box-shadow: inset 0 0 0 1.5px currentColor; }
 
-/* En-tête de section : titre, compteur, liens d'action à droite. */
+/* En-tête de section : titre, compteur, liens d'action à droite. Le titre réserve la hauteur d'un
+   lien d'action (cible de 44px) : l'en-tête garde la même hauteur, et le titre la même place,
+   que les liens soient affichés ou non. Sans cela, le premier élément de la file faisait
+   grandir l'en-tête et descendre tout ce qui suit. */
 .section-head {
     display: flex;
     align-items: center;
@@ -1305,7 +1308,13 @@ select {
     border-bottom: 1px solid var(--t2-filet);
 }
 
-.section-title { font: 600 var(--t2-taille-section)/1.1 var(--t2-titre); letter-spacing: -.02em; }
+.section-title {
+    min-height: var(--t2-cible);
+    display: flex;
+    align-items: center;
+    font: 600 var(--t2-taille-section)/1.1 var(--t2-titre);
+    letter-spacing: -.02em;
+}
 .section-count { font-size: 13px; color: var(--t2-texte-2); }
 .section-tools { margin-left: auto; display: flex; flex-wrap: wrap; gap: 4px 18px; }
 
@@ -1484,8 +1493,11 @@ select {
 
 .now-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
 
-/* File et journal côte à côte quand la place le permet. */
-.dl-columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: 36px; }
+/* File et journal côte à côte quand la place le permet. 28px sous la barre URL (ou le panneau
+   « En lot »), comme la carte « En cours ». Quand cette carte est affichée, les deux marges se
+   touchent entre frères en bloc de .main-content et fusionnent : l'écart reste celui du bas de
+   la carte (36px), il ne s'additionne pas. */
+.dl-columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: 36px; margin-top: 28px; }
 
 @media (min-width: 1200px) {
     .dl-columns { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
@@ -1764,6 +1776,7 @@ select {
     /* Carte « En cours » empilée : le disque au-dessus, centré. */
     .now-panel { grid-template-columns: minmax(0, 1fr); margin: 24px 0 32px; }
     .now-panel .sortie { justify-self: center; }
+    .dl-columns { margin-top: 24px; }
     .now-pct { align-self: flex-start; margin-top: 16px; }
 
     /* Le champ prend la ligne, « En lot » et « Télécharger » se partagent la suivante. */
@@ -1803,6 +1816,10 @@ select {
     .qrow { grid-template-columns: 44px minmax(0, 1fr); row-gap: 4px; }
     .qrow-actions { grid-column: 2; justify-content: flex-end; }
     .section-tools { margin-left: 0; flex: 1 1 100%; }
+
+    /* Les liens passent sous le titre : leur réserver une hauteur à côté de lui ne sert plus. Le
+       titre reste en place à leur arrivée ; seul le contenu en dessous descend. */
+    .section-title { min-height: 0; }
 }
 
 /* Écrans tactiles : cibles élargies et surbrillances de survol neutralisées — sur mobile un
