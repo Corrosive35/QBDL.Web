@@ -3,8 +3,7 @@
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @using QBDL.Web.Services
 @inject LocalizationService Loc
-@* La langue est résolue par le middleware de localisation (Program.cs) avant que cette page ne
-   soit rendue — compte connecté, puis cookie, puis navigateur : la vue n'a plus qu'à la lire. *@
+@* La langue est résolue par le middleware (Program.cs) avant le rendu : la vue n'a qu'à la lire. *@
 
 <!DOCTYPE html>
 <html lang="@Loc.Current">
@@ -36,11 +35,10 @@
 <body>
     <component type="typeof(App)" render-mode="ServerPrerendered" />
 
-    @* Blazor bascule lui-même les classes components-reconnect-* sur cet élément. Sans cet
-       élément dans le document, il injecte son propre bandeau, gris clair et illisible sur le
-       thème sombre. Présenté en bandeau discret en haut de page (app.css), sans masquer
-       l'écran : l'identifiant, les classes d'état et les textes restent ceux d'avant, et le
-       script de reprise plus bas (window.qbdlxResume) n'en dépend pas autrement. *@
+    @* Blazor bascule lui-même les classes components-reconnect-* sur cet élément ; sans lui, il
+       injecte son propre bandeau, illisible sur le thème sombre. Présenté en bandeau discret
+       (app.css). L'identifiant, les classes d'état et les textes ne changent pas : le script de
+       reprise plus bas (window.qbdlxResume) en dépend. *@
     <div id="components-reconnect-modal" class="reconnect-overlay" role="status" aria-live="polite">
         <div class="reconnect-card">
             <div class="reconnect-spinner" aria-hidden="true"></div>
@@ -141,9 +139,8 @@
             return Promise.resolve();
         };
 
-        // Journal de téléchargement : avec une file qui enchaîne les éléments, les nouvelles lignes
-        // sortent sans arrêt du cadre visible. Le garde-fou sur l'élément évite une exception si le
-        // rendu a retiré le nœud entre-temps.
+        // Journal de téléchargement : suivre les nouvelles lignes. Le garde-fou évite une exception si
+        // le rendu a retiré le nœud entre-temps.
         window.scrollToBottom = function (el) {
             if (el) el.scrollTop = el.scrollHeight;
         };

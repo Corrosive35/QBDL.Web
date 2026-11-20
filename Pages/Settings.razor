@@ -94,7 +94,6 @@
     </div>
 </div>
 
-<!-- Quality -->
 <div class="card">
     <div class="card-title">@Loc["settings.quality.title"]</div>
     <div class="quality-group">
@@ -108,7 +107,6 @@
     </div>
 </div>
 
-<!-- Templates -->
 <div class="card">
     <div class="card-title">@Loc["settings.templates.title"]</div>
     <div class="settings-grid">
@@ -142,7 +140,6 @@
         </div>
     </div>
 
-    <!-- Template Variables Reference -->
     <details class="template-help" style="margin-top:16px;">
         <summary class="template-help-toggle">@Loc["settings.templates.varsToggle"]</summary>
         <div class="template-help-content">
@@ -258,7 +255,6 @@
     </details>
 </div>
 
-<!-- Tagging Options -->
 <div class="card">
     <div class="card-title">@Loc["settings.tagging.title"]</div>
     <div class="settings-grid">
@@ -302,7 +298,6 @@
     </div>
 </div>
 
-<!-- Artwork -->
 <div class="card">
     <div class="card-title">@Loc["settings.artwork.title"]</div>
     <div class="settings-grid">
@@ -332,7 +327,6 @@
     <label class="setting-item"><input type="checkbox" @bind="S.DontSaveArtworkToDisk" @bind:after="Save" /><span>@Loc["settings.artwork.dontSave"]</span></label>
 </div>
 
-<!-- Advanced -->
 <div class="card">
     <div class="card-title">@Loc["settings.advanced.title"]</div>
     <div class="settings-grid">
@@ -354,7 +348,6 @@
     </div>
 </div>
 
-<!-- Mon compte -->
 <div class="card">
     <div class="card-title">@Loc["settings.me.title"]</div>
     <div class="form-group">
@@ -483,9 +476,8 @@
                 SettingsSvc.Update(s => s.ApplyAccountStatus(user));
                 _accountMessage = Loc["settings.account.refreshed"];
 
-                // Les droits sont revenus : relancer les files laissées en attente — celles de tous
-                // les utilisateurs, le compte étant partagé —, plutôt que d'obliger chacun à cliquer
-                // « relancer » élément par élément.
+                // Droits revenus : relancer les files en attente de tous les utilisateurs (compte
+                // partagé), plutôt que d'obliger chacun à cliquer « relancer » élément par élément.
                 if (A.HasSubscription) Download.ResumeAfterSubscriptionBlock();
             }
         }
@@ -506,10 +498,8 @@
         Users.Update(Guard.UserId, u => { u.Settings.QualityFormat = formatId; u.Settings.AudioFormat = audioFormat; });
     }
 
-    /// <summary>
-    /// Ce que faisait autrefois « Déconnexion » dans la barre latérale. Celle-ci ne déconnecte plus
-    /// que de l'application : le compte Qobuz étant partagé, le vider couperait tout le monde.
-    /// </summary>
+    /// <summary>Déconnecte le compte Qobuz de l'instance, donc tout le monde : la barre latérale, elle,
+    /// ne déconnecte que de l'application.</summary>
     private void DisconnectQobuz()
     {
         // Revérifié ici : le bouton masqué ne suffit pas à interdire l'appel.

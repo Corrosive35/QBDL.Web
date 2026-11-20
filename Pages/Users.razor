@@ -20,7 +20,6 @@
         <div class="@(_messageIsError ? "auth-error" : "form-success")">@_message</div>
     }
 
-    <!-- Création -->
     <div class="card">
         <div class="card-title">@Loc["users.create.title"]</div>
         <div class="settings-grid">
@@ -46,7 +45,6 @@
         <button class="btn btn-primary" style="margin-top:12px;" @onclick="CreateUser">@Loc["users.create.submit"]</button>
     </div>
 
-    <!-- Liste -->
     <div class="card">
         <div class="card-title">@Loc["users.list.title"]</div>
         <div class="users-list">

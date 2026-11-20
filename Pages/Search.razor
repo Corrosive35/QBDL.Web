@@ -11,8 +11,7 @@
 
 <h3 style="margin-bottom:16px;">@Loc["search.title"]</h3>
 
-@* Champ de recherche en pilule de verre ; les onglets lancent la recherche du type choisi, Entrée
-   relance la dernière. *@
+@* Les onglets lancent la recherche du type choisi ; Entrée relance la dernière. *@
 <div class="search-field">
     <NavIcon Name="search" />
     <input type="text" inputmode="search" enterkeyhint="search" autocomplete="off"
@@ -247,8 +246,7 @@
     // Capturé une fois : OnQueueChanged arrive depuis les workers, hors du circuit.
     private string _me = "";
 
-    // Cette page est désormais la page d'accueil ("/"), elle doit donc porter le garde de session
-    // qui vivait jusqu'ici uniquement sur le téléchargeur.
+    // Page d'accueil ("/") : c'est elle qui porte le garde de session.
     protected override void OnInitialized()
     {
         base.OnInitialized();
@@ -284,9 +282,8 @@
     };
 
     // ─── Modèles de rendu ───
-    //
-    // Carte d'album (grille des résultats et albums d'un artiste) : pochette nue, méta, puis la
-    // capsule C1 « choisir | télécharger ». Rien n'est posé sur l'image.
+    // Carte d'album : pochette nue, méta, puis la capsule C1 « choisir | télécharger ». Rien n'est
+    // posé sur l'image.
     private RenderFragment AlbumTile(QobuzAlbum album, bool withArtist)
     {
         var id = album.Id;
@@ -456,11 +453,8 @@
     }
 
     // ─── File d'attente ───
-    //
-    // Ces trois méthodes sont synchrones : Enqueue rend la main immédiatement, le worker du service
-    // draine en arrière-plan. C'est ce qui permet de continuer à chercher pendant un téléchargement,
-    // là où l'ancien `await ProcessUrlAsync` bloquait le gestionnaire de clic jusqu'au bout.
-    // La variable d'itération d'un foreach étant capturée par itération depuis C# 5,
+    // Méthodes synchrones : Enqueue rend la main et le worker draine en arrière-plan, on peut donc
+    // continuer à chercher. La variable d'un foreach étant capturée par itération (C# 5),
     // `@onclick="() => QueueAlbum(album)"` désigne bien l'album de la ligne.
 
     private static string AlbumUrl(string id) => $"https://play.qobuz.com/album/{id}";

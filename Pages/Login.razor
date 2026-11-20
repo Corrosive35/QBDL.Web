@@ -99,19 +99,14 @@
     }
 
     /// <summary>
-    /// Reconnexion depuis les réglages persistés, et relecture de la fiche du compte au passage.
-    /// Sans cette relecture, un abonnement arrivé à expiration passait inaperçu : le jeton restant
-    /// valide, l'application démarrait normalement et ne le découvrait qu'au premier téléchargement,
-    /// piste après piste.
-    ///
-    /// L'appel ne conditionne pas l'accès : si Qobuz est injoignable, on entre quand même avec le
-    /// dernier état connu. Une panne de leur côté ne doit pas fermer la porte.
+    /// Reconnexion depuis les réglages persistés, avec relecture de la fiche du compte : sinon un
+    /// abonnement expiré, jeton toujours valide, ne se découvrirait qu'au premier téléchargement.
+    /// L'accès n'en dépend pas : si Qobuz est injoignable, on entre avec le dernier état connu.
     /// </summary>
     protected override async Task OnInitializedAsync()
     {
         var s = Settings.Settings;
 
-        // Auto-login if token and secret are persisted
         if (string.IsNullOrEmpty(s.UserAuthToken) || string.IsNullOrEmpty(s.AppId) || string.IsNullOrEmpty(s.AppSecret))
             return;
 
@@ -149,7 +144,6 @@
 
         try
         {
-            // Validate inputs early
             if (_useToken)
             {
                 if (string.IsNullOrWhiteSpace(_token)) { _error = Loc["login.error.noToken"]; return; }
@@ -164,14 +158,13 @@
 
             if (hasCustomCredentials)
             {
-                // User provided custom credentials — use them directly, no automatic resolution
                 await LoginWithCredentials(_customAppId, _customAppSecret);
                 return;
             }
 
-            // Résolution automatique depuis le lecteur web : la seule voie hors identifiants
-            // personnalisés, aucun couple n'étant plus embarqué dans le code. Chaque échec est
-            // nommé à l'écran et journalisé, au lieu d'être avalé avant un repli silencieux.
+            // Résolution automatique depuis le lecteur web, seule voie hors identifiants
+            // personnalisés : aucun couple n'est embarqué dans le code. Chaque échec est nommé à
+            // l'écran et journalisé.
             string appId;
             try
             {
@@ -219,9 +212,8 @@
         {
             // Échec, quelle qu'en soit l'étape : la tentative a pu laisser en mémoire un app_id, un
             // jeton refusé (LoginWithTokenAsync le retient avant de le vérifier) ou un jeton sans
-            // secret. QobuzApiService étant partagé, l'application paraîtrait alors connectée pour
-            // tous au rechargement suivant, avec des identifiants inutilisables. Retour au dernier
-            // état valide, celui de settings.json — vide sur une installation neuve.
+            // secret, et QobuzApiService est partagé. Retour au dernier état valide, celui de
+            // settings.json.
             if (!_loginApplied)
             {
                 var saved = Settings.Settings;

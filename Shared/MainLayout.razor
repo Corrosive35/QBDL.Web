@@ -14,9 +14,8 @@
     var covers = Ambiance.Covers;
 }
 
-@* Fond « Sillon + Mosaïque », sous tout le reste et sur tous les écrans : nuit, sillons et voile
-   en CSS (app.css). Le mur n'existe que si la page affichée a fourni des pochettes ; elles sont
-   répétées pour couvrir l'écran, passées en gris et floutées par le CSS. *@
+@* Fond « Sillon + Mosaïque » (app.css), sous tout le reste. Le mur n'existe que si la page
+   affichée a fourni des pochettes, répétées pour couvrir l'écran. *@
 <div class="fond-sillon-mosaique" aria-hidden="true">
     @if (covers.Count > 0)
     {
@@ -132,10 +131,9 @@ else
         {
             var remaining = Download.RemainingCount(Guard.UserId);
 
-            @* Bureau : barre latérale (navigation, mini-carte « En cours », bloc Session). Sous
-               768px, le CSS la masque au profit de la barre d'onglets en bas, et le bloc Session
-               passe en bas des Paramètres. Les libellés sont enveloppés dans des <span> : un nœud
-               texte nu deviendrait un item flex anonyme avec ses blancs d'indentation. *@
+            @* Bureau : barre latérale. Sous 768px, le CSS la remplace par la barre d'onglets, et
+               le bloc Session passe en bas des Paramètres. Libellés dans des <span> : un nœud
+               texte nu deviendrait un item flex anonyme, blancs d'indentation compris. *@
             <aside class="sidebar" aria-label='@Loc["nav.main"]'>
                 <a class="sidebar-logo" href="/">QBDL</a>
                 <nav class="sidebar-nav">
@@ -254,7 +252,6 @@ else
         if (ownerId == null || ownerId == _userId) InvokeAsync(StateHasChanged);
     }
 
-    // Une page vient de fournir (ou de retirer) les pochettes du mur.
     private void OnAmbianceChanged() => InvokeAsync(StateHasChanged);
 
     public void Dispose()

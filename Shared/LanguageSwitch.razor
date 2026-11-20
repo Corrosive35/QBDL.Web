@@ -1,11 +1,9 @@
 @inject LocalizationService Loc
 @inject NavigationManager Nav
 
-@* Bascule FR | EN. Un vrai formulaire, et non un gestionnaire Blazor : la langue est fixée par
-   requête (middleware de localisation), et un circuit garde la culture de la connexion qui l'a
-   ouvert — seul un rechargement peut donc l'appliquer. Ce rechargement ne coûte rien : la connexion
-   vit dans un cookie, et la file comme la recherche dans des singletons. Fonctionne aussi au
-   prérendu, avant que le circuit ne soit établi. *@
+@* Bascule FR | EN par un vrai formulaire, et non un gestionnaire Blazor : la langue est fixée par
+   requête et un circuit garde la culture de sa connexion, seul un rechargement l'applique. Il ne
+   coûte rien (cookie de connexion, file et recherche en singletons) et fonctionne au prérendu. *@
 <form class="lang-switch" method="post" action="/culture">
     <input type="hidden" name="returnUrl" value="@ReturnUrl" />
     @* Les noms accessibles sont dans leur propre langue (lang) ; aria-pressed annonce la langue

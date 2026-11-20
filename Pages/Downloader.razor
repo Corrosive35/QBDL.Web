@@ -8,9 +8,8 @@
 @inject AmbianceService Ambiance
 @inherits LocalizedComponentBase
 
-@* Instantanés pris UNE fois par rendu : les collections vives du service sont mutées par le worker
-   sur un autre thread, les énumérer directement lèverait « Collection was modified ».
-   Tout est filtré sur l'utilisateur connecté : chacun ne voit que sa file. *@
+@* Instantanés pris une fois par rendu : le worker mute les collections sur un autre thread, les
+   énumérer lèverait « Collection was modified ». Filtrés sur l'utilisateur connecté. *@
 @{
     var queue = Download.QueueSnapshot(_me);
     var log = Download.LogSnapshot(_me);
@@ -28,7 +27,6 @@
     @Loc["download.qualityLabel"] <strong>@QualityLabel</strong> — <a class="lnk" href="/settings">@Loc["download.qualityEdit"]</a>
 </p>
 
-@* Plus aucun disabled lié au téléchargement en cours : c'est tout l'objet de la file. *@
 <div class="url-field">
     <input type="text" inputmode="url" enterkeyhint="go" autocomplete="off" spellcheck="false"
            aria-label='@Loc["download.urlPlaceholder"]' placeholder='@Loc["download.urlPlaceholder"]'
@@ -46,9 +44,8 @@
     </div>
 }
 
-@* Carte « En cours » : la pochette, et le disque qui en sort. L'étiquette du disque est la pochette
-   recadrée en rond : aucune couleur n'est extraite. Le disque ne tourne que pendant le
-   téléchargement, et pas du tout si l'appareil demande moins d'animations. *@
+@* Carte « En cours » : l'étiquette du disque est la pochette recadrée en rond. Le disque ne tourne
+   que pendant le téléchargement, et jamais si l'appareil demande moins d'animations. *@
 @if (running != null)
 {
     var album = progress.CurrentAlbum;
@@ -193,9 +190,8 @@
                             }
                         </div>
 
-                        @* Jamais plus de trois boutons par ligne, quel que soit l'état : c'est ce qui
-                           rend la ligne tenable à 375px. Annuler et Passer vivent dans la carte
-                           « En cours », toujours affichée tant qu'un élément tourne. *@
+                        @* Trois boutons au plus par ligne, pour tenir à 375px : Annuler et Passer
+                           vivent dans la carte « En cours », affichée tant qu'un élément tourne. *@
                         <div class="qrow-actions">
                             @if (it.Status == QueueItemStatus.Pending)
                             {
@@ -300,8 +296,6 @@
         _ => "ann"
     };
 
-    // Le journal ne défilait pas : _logRef était déclaré mais jamais utilisé. Avec une file qui
-    // enchaîne les éléments, le défaut devient criant.
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         var count = Download.LogCount(_me);
@@ -332,7 +326,7 @@
         _batchUrls = "";
     }
 
-    // Le choix de la qualité vit désormais dans les Paramètres ; on n'affiche ici qu'un rappel.
+    // Simple rappel : la qualité se choisit dans les Paramètres.
     private string QualityLabel => Guard.Settings.QualityFormat switch
     {
         "5" => "MP3 320",
