@@ -35,7 +35,6 @@ public class QobuzApiService
         _appSecret = appSecret;
         _userAuthToken = userAuthToken;
 
-        // Match original DLL: set X-App-Id as default header (like QopenAPI Service.Login)
         _http.DefaultRequestHeaders.Remove("X-App-Id");
         if (!string.IsNullOrEmpty(appId))
             _http.DefaultRequestHeaders.Add("X-App-Id", appId);
@@ -57,7 +56,6 @@ public class QobuzApiService
         var appIdMatch = Regex.Match(bundleJs, @"production:\{api:\{appId:""(\d+)"",appSecret:""(\w+)""");
         if (!appIdMatch.Success)
         {
-            // Fallback: try alternative pattern
             appIdMatch = Regex.Match(bundleJs, @"app_id:\s*""(\d+)""");
             if (!appIdMatch.Success)
                 throw new Exception("Could not extract app_id from bundle.js");
@@ -77,7 +75,7 @@ public class QobuzApiService
         _logger.LogInformation("Fetching app_secret...");
         var bundleJs = await FetchBundleJsAsync();
 
-        // ── Method 1: seed + info + extras (original algorithm) ──
+        // ── Method 1: seed + info + extras ──
         var candidateSecrets = ExtractSecretsFromBundle(bundleJs);
         _logger.LogInformation("Found {Count} candidate secrets from bundle", candidateSecrets.Count);
 
@@ -115,7 +113,6 @@ public class QobuzApiService
     {
         var html = await _http.GetStringAsync($"{PlayBaseUrl}/login");
 
-        // Try multiple bundle URL patterns
         var bundleMatch = Regex.Match(html, @"<script src=""(/resources/\d+\.\d+\.\d+-[a-z]\d{3}/bundle\.js)""");
         if (!bundleMatch.Success)
             bundleMatch = Regex.Match(html, @"""(/resources/\d+\.\d+\.\d+-[a-z]\d+/bundle\.js)""");
@@ -131,7 +128,7 @@ public class QobuzApiService
     {
         var decoded = new List<string>();
 
-        // ── Primary: Berlin-only extraction (exactly like QopenAPI.dll) ──
+        // ── Primary: Berlin-only extraction ──
         var berlinInfoMatch = Regex.Match(bundleJs,
             @"name:""(?<timezone>[A-Za-z\/]+\/Berlin)"",info:""(?<info>[\w=]+)"",extras:""(?<extras>[\w=]+)""");
         var berlinSeedMatch = Regex.Match(bundleJs,
@@ -221,7 +218,7 @@ public class QobuzApiService
     {
         try
         {
-            // Use same test params as QopenAPI.dll: track 197432204, format 5
+            // Piste et format fixes : seule la validité de la signature est testée.
             var timestamp = ((int)DateTimeOffset.UtcNow.ToUnixTimeSeconds()).ToString();
             var sigData = $"trackgetFileUrlformat_id5intentstreamtrack_id197432204{timestamp}{secret}";
             var sig = ComputeMD5(sigData);
@@ -285,13 +282,10 @@ public class QobuzApiService
     }
 
     /// <summary>
-    /// Lit la fiche du compte : identité, droits de streaming, abonnement. Seul appel qui renseigne
-    /// l'état de l'abonnement sans passer par un téléchargement, et il répond de la même façon
-    /// qu'on se soit connecté par mot de passe ou par jeton — c'est ce qui permet de détecter un
-    /// abonnement expiré avant la première piste.
-    ///
-    /// Un compte sans abonnement répond 200 avec <c>credential.parameters</c> à null : le jeton est
-    /// valide, mais aucun droit n'y est attaché.
+    /// Fiche du compte : identité, droits de streaming, abonnement. Seul appel qui renseigne
+    /// l'abonnement sans télécharger, quel que soit le mode de connexion : il détecte un abonnement
+    /// expiré avant la première piste. Sans abonnement, la réponse est 200 avec
+    /// <c>credential.parameters</c> à null.
     /// </summary>
     public async Task<QobuzUserInfo?> GetUserInfoAsync(string appId, string token, CancellationToken ct = default)
     {
@@ -358,7 +352,7 @@ public class QobuzApiService
         var sigData = $"trackgetFileUrlformat_id{formatId}intentstreamtrack_id{trackId}{timestamp}{_appSecret}";
         var sig = ComputeMD5(sigData);
 
-        // Match original app: app_id and user_auth_token in query params (like Form1.cs)
+        // app_id et user_auth_token en paramètres de requête, comme dans l'application d'origine.
         var url = $"{BaseUrl}track/getFileUrl?request_ts={timestamp}&request_sig={sig}&track_id={trackId}&format_id={formatId}&intent=stream&app_id={_appId}&user_auth_token={_userAuthToken}";
 
         var request = new HttpRequestMessage(HttpMethod.Get, url);

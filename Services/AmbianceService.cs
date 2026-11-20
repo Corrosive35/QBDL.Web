@@ -1,10 +1,8 @@
 namespace QBDL.Web.Services;
 
 /// <summary>
-/// Pochettes du « mur » du fond Sillon + Mosaïque (MainLayout.razor), propres à chaque circuit.
-/// Chaque page fournit les pochettes qu'elle affiche (SetCovers) et les retire en quittant
-/// (Clear) ; sans pochette, le fond reste calme : nuit, sillons et voile, sans mur. Le mur est
-/// passé en gris et flouté par le CSS : aucune couleur n'est tirée des images.
+/// Pochettes du mur du fond (MainLayout.razor), propres à chaque circuit : chaque page fournit
+/// les siennes (SetCovers) et les retire en partant (Clear). Le CSS les grise et les floute.
 /// </summary>
 public sealed class AmbianceService
 {
