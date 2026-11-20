@@ -143,11 +143,9 @@ public class QobuzStreamUrl
     // l'étiquetage échoue ensuite sur un flux qui n'est pas FLAC.
     [JsonProperty("sample")] public bool Sample { get; set; }
 
-    // Diagnostic seulement — la décision de blocage repose sur « sample » et sur le type MIME.
-    // Laissé en JArray à dessein : la forme de ce tableau n'est pas documentée (objets `{code}`
-    // selon les réponses observées, mais rien ne le garantit). Le typer fermement ferait échouer
-    // la désérialisation, et donc *tous* les téléchargements, sur une variante inattendue — pour
-    // une information qui ne sert qu'à la ligne de journal.
+    // Diagnostic seulement : le blocage repose sur « sample » et le type MIME. JArray à dessein, la
+    // forme n'étant pas documentée : un typage strict ferait échouer tous les téléchargements sur une
+    // variante inattendue, pour une simple ligne de journal.
     [JsonProperty("restrictions")] public JArray? Restrictions { get; set; }
 }
 

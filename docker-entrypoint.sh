@@ -1,14 +1,11 @@
 #!/bin/sh
 # Point d'entrée de l'image QBDL.Web.
 #
-# Pourquoi démarrer en root : quand le dossier monté sur /config (ou /downloads) n'existe pas
-# encore sur l'hôte, Docker le crée lui-même, au nom de root. L'application, qui tourne en
-# qbdlx (UID 1000), ne pouvait alors rien y écrire et plantait en boucle au premier
-# enregistrement de users.json. Ce script répare ces droits, puis rend la main à l'application
-# sous qbdlx : elle ne tourne jamais en root.
-#
-# Il ne change rien quand tout est déjà en ordre (installation existante) : seul ce qui
-# n'appartient pas à 1000 ET n'est pas inscriptible par qbdlx est repris.
+# Démarre en root parce que Docker crée en root un dossier d'hôte absent monté sur /config ou
+# /downloads, où qbdlx (UID 1000) ne pourrait rien écrire. Le script répare ces droits, puis rend
+# la main à l'application sous qbdlx : elle ne tourne jamais en root. Il ne change rien sur une
+# installation en ordre : seul ce qui n'appartient pas à 1000 ET n'est pas inscriptible par
+# qbdlx est repris.
 set -eu
 
 APP_USER=qbdlx
@@ -23,7 +20,6 @@ if [ "$(id -u)" != "0" ]; then
     exec "$@"
 fi
 
-# Vrai si qbdlx peut écrire dans le chemin donné.
 writable_by_app() {
     su-exec "$APP_USER" sh -c 'test -w "$1"' sh "$1"
 }

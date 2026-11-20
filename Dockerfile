@@ -1,18 +1,16 @@
 # Stage 1: Build
-# Le SDK tourne sur l'architecture de la machine de build ($BUILDPLATFORM) et compile pour
-# l'architecture visée ($TARGETARCH : amd64 ou arm64), deux variables que BuildKit renseigne seul.
-# Sans cela, l'image arm64 construite sur un runner x86 ferait tourner tout le SDK .NET sous
-# émulation QEMU : lent, et non pris en charge par Microsoft.
+# Le SDK tourne sur l'architecture de build ($BUILDPLATFORM) et compile pour la cible
+# ($TARGETARCH) : sans cela, l'image arm64 construite sur un runner x86 ferait tourner tout le
+# SDK sous émulation QEMU, lent et non pris en charge par Microsoft.
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build
 ARG TARGETARCH
 WORKDIR /src
 COPY QBDL.Web.csproj .
 RUN dotnet restore -a $TARGETARCH
 COPY . .
-# Version affichée (barre latérale, /healthz). Vide par défaut : l'image annonce alors <Version>
-# du csproj, comme une release. Seul le workflow de la branche dev la renseigne
-# (« 1.8.0-dev+<commit> »). Déclarée ici, après la restauration, pour que son changement à chaque
-# commit n'invalide pas le cache du « dotnet restore ».
+# Version affichée (barre latérale, /healthz). Vide par défaut : l'image annonce <Version> du
+# csproj. Seul le workflow de dev la renseigne. Déclarée après la restauration, pour que son
+# changement à chaque commit n'invalide pas le cache du « dotnet restore ».
 ARG APP_VERSION=
 RUN dotnet publish -c Release -a $TARGETARCH -o /app --no-restore \
     ${APP_VERSION:+"-p:InformationalVersion=$APP_VERSION"}
@@ -29,10 +27,8 @@ WORKDIR /app
 #   bascule sur qbdlx (voir docker-entrypoint.sh).
 RUN apk add --no-cache flac icu-libs icu-data-full su-exec
 
-# Create non-root user
 RUN addgroup -g 1000 qbdlx && adduser -u 1000 -G qbdlx -D qbdlx
 
-# Create volumes and set ownership
 RUN mkdir -p /downloads /config && chown -R qbdlx:qbdlx /downloads /config
 
 COPY --from=build --chown=qbdlx:qbdlx /app .

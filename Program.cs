@@ -12,16 +12,13 @@ using QBDL.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Le trousseau Data Protection chiffre le cookie d'accès. Par défaut il atterrit dans
-// ~/.aspnet/DataProtection-Keys, soit /home/qbdlx dans l'image : un répertoire qui n'est pas
-// monté en volume (seuls /downloads et /config le sont). Sans cette ligne, chaque redémarrage
-// du conteneur régénérerait les clés et invaliderait silencieusement tous les cookies déjà
-// émis — l'écran de verrouillage reviendrait sans la moindre trace dans les logs.
+// Le trousseau Data Protection chiffre le cookie d'accès. Par défaut il irait dans /home/qbdlx,
+// hors volume : chaque redémarrage du conteneur régénérerait les clés et invaliderait sans
+// trace tous les cookies émis.
 //
-// Le nom d'application sert lui aussi à chiffrer : le changer rend illisibles tous les cookies
-// émis, et déconnecte chaque appareil, application Android comprise. Il est passé de
-// « QobuzDLX.Web » à « QBDL.Web » une seule fois, en 1.7.0, version qui imposait déjà une
-// reconnexion par appareil. Il ne doit plus changer, même si le projet est renommé à nouveau.
+// Le nom d'application sert lui aussi à chiffrer : le changer déconnecte chaque appareil,
+// application Android comprise. Passé de « QobuzDLX.Web » à « QBDL.Web » en 1.7.0, il ne doit
+// plus changer, même si le projet est renommé à nouveau.
 var configPath = Environment.GetEnvironmentVariable("CONFIG_PATH") ?? "/config";
 builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(new DirectoryInfo(Path.Combine(configPath, "dataprotection-keys")))
@@ -30,11 +27,9 @@ builder.Services.AddDataProtection()
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor(options =>
 {
-    // Trois minutes par défaut. Sur mobile, l'application passe en arrière-plan bien plus
-    // longtemps que ça ; dix minutes couvrent « je réponds à un message et je reviens » sans
-    // avoir à reconstruire le circuit. La rétention ne sert toutefois que si c'est la même page
-    // qui se reconnecte : quand le système tue le processus du navigateur, un nouveau circuit
-    // naît de toute façon, et c'est le rechargement automatique côté client qui prend le relais.
+    // Trois minutes par défaut ; dix couvrent « je réponds à un message et je reviens » sur mobile.
+    // La rétention ne sert que si la même page se reconnecte : quand le système tue le navigateur,
+    // c'est le rechargement automatique côté client qui prend le relais.
     options.DisconnectedCircuitRetentionPeriod = TimeSpan.FromMinutes(10);
     options.DisconnectedCircuitMaxRetained = 50;
     // Le gel de l'onglet ne doit pas faire expirer une interopérabilité JS en vol.
@@ -42,16 +37,13 @@ builder.Services.AddServerSideBlazor(options =>
 })
 .AddHubOptions(options =>
 {
-    // Règle SignalR : le délai d'expiration doit valoir au moins deux fois le keep-alive.
-    // Attention, le client a ses propres valeurs (30 s / 15 s) : les relever ici seulement ne
-    // servirait à rien, c'est lui qui déclarerait la connexion morte en premier. Le pendant
-    // côté navigateur est dans _Host.cshtml.
+    // Règle SignalR : le délai d'expiration vaut au moins deux fois le keep-alive. Le client a ses
+    // propres valeurs (30 s / 15 s) et couperait le premier : leur pendant est dans _Host.cshtml.
     options.KeepAliveInterval = TimeSpan.FromSeconds(20);
     options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
     options.HandshakeTimeout = TimeSpan.FromSeconds(30);
 });
 
-// Register services
 builder.Services.AddSingleton<SettingsService>();
 builder.Services.AddSingleton<UserStore>();
 builder.Services.AddSingleton<QobuzApiService>();
@@ -69,9 +61,8 @@ builder.Services.AddScoped<AmbianceService>();
 // par l'ouverture d'un nouvel onglet.
 builder.Services.AddSingleton<AppAccessGate>();
 
-// Cookie d'accès à l'application. Il remplace un état qui vivait dans le circuit Blazor et que
-// le moindre rechargement perdait — sur mobile, où le système gèle puis tue les WebView, cela
-// revenait à ressaisir le mot de passe à chaque retour dans l'application.
+// Cookie d'accès : un état gardé dans le circuit Blazor se perdrait à chaque rechargement, donc à
+// chaque retour dans une WebView que le système a gelée puis tuée.
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -216,12 +207,10 @@ app.MapPost("/auth/unlock", async (HttpContext ctx, UserStore users, AppAccessGa
 
     gate.RegisterSuccess();
 
-    // Le mot de passe était encore stocké en SHA256 sans sel, hérité d'une version antérieure :
-    // c'est la seule occasion de le repasser en PBKDF2, puisque c'est le seul moment où
-    // l'application détient le mot de passe en clair. Fait avant l'émission du cachet — « user » est
-    // l'objet même que modifie Update — sans quoi le cookie porterait l'empreinte de l'ancien hachage
-    // et OnValidatePrincipal le rejetterait dès la requête suivante. Les autres appareils de ce
-    // compte, eux, redemanderont le mot de passe une fois, comme après un changement de mot de passe.
+    // Ancien hachage SHA256 sans sel : seule occasion de le repasser en PBKDF2, puisque c'est le seul
+    // moment où le mot de passe est connu en clair. Fait avant l'émission du cachet (« user » est
+    // l'objet que modifie Update), sinon OnValidatePrincipal rejetterait le cookie dès la requête
+    // suivante. Les autres appareils du compte redemanderont le mot de passe une fois.
     if (AppGuardService.IsLegacyHash(user.PasswordHash))
     {
         var upgraded = AppGuardService.HashPassword(password);
@@ -298,8 +287,8 @@ app.MapPost("/auth/lock", async (HttpContext ctx) =>
     return Results.Redirect("/");
 });
 
-// Bascule de langue. Connecté, le choix est enregistré sur le compte ; sinon il ne vit que dans le
-// cookie de ce navigateur — un visiteur ne modifie plus rien de partagé.
+// Bascule de langue : enregistrée sur le compte si l'on est connecté, sinon dans le seul cookie
+// de ce navigateur.
 app.MapPost("/culture", async (HttpContext ctx, UserStore users) =>
 {
     var form = await ctx.Request.ReadFormAsync();
