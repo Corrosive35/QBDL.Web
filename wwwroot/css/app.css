@@ -70,8 +70,7 @@
     --t2-console: rgba(8, 9, 14, .55);         /* journal, sous le texte à chasse fixe */
     --t2-piste: rgba(255, 255, 255, .24);      /* fond d'une barre de progression */
 
-    /* Anciennes variables, remappées sur les jetons T2 le temps que chaque page reçoive sa
-       forme définitive (étapes 2 à 4 de la refonte). */
+    /* Anciennes variables, remappées sur les jetons T2 ; quelques règles s'en servent encore. */
     --bg-primary: var(--t2-nuit);
     --bg-secondary: var(--t2-verre);
     --bg-card: var(--t2-verre-fort);
@@ -84,9 +83,8 @@
     --border: var(--t2-filet);
     --scrollbar: var(--t2-verre-fort);
 
-    /* Coquille. --tabbar-space : hauteur réservée à la barre d'onglets mobile (0 au bureau, et
-       pendant la saisie au clavier où la barre est masquée). Référencée par les éléments fixés
-       en bas de l'écran : barre de sélection, notifications. */
+    /* Coquille. --tabbar-space : hauteur réservée à la barre d'onglets mobile (0 au bureau et
+       clavier ouvert), pour les éléments fixés en bas : barre de sélection, notifications. */
     --sidebar-width: 260px;
     --tabbar-space: 0px;
 }
@@ -106,9 +104,8 @@ button, input, select, textarea { font-family: inherit; }
 
 h1, h2, h3, h4 { font-family: var(--t2-titre); font-weight: 600; letter-spacing: -.02em; }
 
-/* Focus clavier : un contour blanc décalé, et non une ombre, pour ne pas être écrasé par les
-   box-shadow (reflets, contours) que portent la plupart des boutons. Les champs ont leur propre
-   bordure de focus. */
+/* Focus clavier : un contour décalé, et non une ombre, que les box-shadow des boutons
+   écraseraient. Les champs ont leur propre bordure de focus. */
 :is(a, button, select, summary, [tabindex]):focus-visible {
     outline: 2px solid var(--t2-texte);
     outline-offset: 3px;
@@ -132,9 +129,8 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 }
 
 /* ── Fond « Sillon + Mosaïque » ────────────────────────────────────────────
-   Couches, de bas en haut : nuit → mur de pochettes (gris, flou, seulement si la page en
-   fournit, cf. AmbianceService) → sillons → voile haut/bas. Tout est en CSS : aucune couleur ne
-   sort des images. z-index 0 : contexte d'empilement propre, sous #app. */
+   Couches, de bas en haut : nuit → mur de pochettes (si la page en fournit, cf. AmbianceService)
+   → sillons → voile haut/bas. z-index 0 : contexte d'empilement propre, sous #app. */
 .fond-sillon-mosaique {
     position: fixed;
     inset: 0;
@@ -527,7 +523,6 @@ input:focus-visible, textarea:focus-visible { outline: none; }
 }
 
 /* Cards */
-/* Verre : fond translucide flouté, reflet en haut. */
 .card {
     background: var(--t2-verre);
     -webkit-backdrop-filter: blur(var(--t2-verre-flou)) saturate(1.4);
@@ -708,9 +703,8 @@ select {
     line-height: 1.5;
 }
 
-/* Messages des formulaires (connexion, installation, mot de passe, comptes). L'erreur reprend les
-   teintes de l'alerte en ligne qu'elle remplace sur l'écran de connexion. */
-/* Erreur : contour plein ; succès : verre. Pas de rouge ni de vert, la forme distingue les deux. */
+/* Messages des formulaires (connexion, installation, mot de passe, comptes). Erreur : contour
+   plein ; succès : verre. La forme les distingue, pas la couleur. */
 .auth-error {
     background: var(--t2-verre);
     border: 1.5px solid var(--t2-texte);
@@ -1295,9 +1289,7 @@ select {
 .bdg.ann i { background: transparent; box-shadow: inset 0 0 0 1.5px currentColor; }
 
 /* En-tête de section : titre, compteur, liens d'action à droite. Le titre réserve la hauteur d'un
-   lien d'action (cible de 44px) : l'en-tête garde la même hauteur, et le titre la même place,
-   que les liens soient affichés ou non. Sans cela, le premier élément de la file faisait
-   grandir l'en-tête et descendre tout ce qui suit. */
+   lien d'action (44px) : l'en-tête ne bouge pas quand les liens apparaissent. */
 .section-head {
     display: flex;
     align-items: center;
@@ -1493,10 +1485,8 @@ select {
 
 .now-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
 
-/* File et journal côte à côte quand la place le permet. 28px sous la barre URL (ou le panneau
-   « En lot »), comme la carte « En cours ». Quand cette carte est affichée, les deux marges se
-   touchent entre frères en bloc de .main-content et fusionnent : l'écart reste celui du bas de
-   la carte (36px), il ne s'additionne pas. */
+/* File et journal côte à côte quand la place le permet. 28px sous la barre URL, comme la carte
+   « En cours » ; avec la carte, les deux marges fusionnent (36px). */
 .dl-columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: 36px; margin-top: 28px; }
 
 @media (min-width: 1200px) {
@@ -1817,8 +1807,7 @@ select {
     .qrow-actions { grid-column: 2; justify-content: flex-end; }
     .section-tools { margin-left: 0; flex: 1 1 100%; }
 
-    /* Les liens passent sous le titre : leur réserver une hauteur à côté de lui ne sert plus. Le
-       titre reste en place à leur arrivée ; seul le contenu en dessous descend. */
+    /* Les liens passent sous le titre : inutile de leur réserver une hauteur à côté. */
     .section-title { min-height: 0; }
 }
 
@@ -1851,9 +1840,8 @@ select {
 
 /* ── Bandeau de reconnexion ────────────────────────────────────────────────────
    Blazor pose lui-même les classes components-reconnect-{show,failed,rejected} sur
-   #components-reconnect-modal ; on ne fait que les habiller. Bandeau discret en haut de la page,
-   qui ne masque plus l'écran : c'est ce que l'application mobile montre le plus souvent, à chaque
-   retour au premier plan. Seule animation : la rotation CSS de l'indicateur. */
+   #components-reconnect-modal ; on ne fait que les habiller, en bandeau discret en haut de page :
+   l'application mobile le montre à chaque retour au premier plan. */
 #components-reconnect-modal { display: none; }
 
 #components-reconnect-modal.components-reconnect-show,
@@ -1931,9 +1919,8 @@ select {
 }
 
 /* Chiffres tabulaires pour les valeurs qui changent en direct. Le raccourci « font: » remet
-   font-variant-numeric à normal : sans cette règle, posée en dernier, ces éléments
-   reprendraient les chiffres proportionnels par défaut de Space Grotesk et feraient sautiller
-   la mise en page à chaque mise à jour. Le fichier latin porte bien la fonctionnalité tnum. */
+   font-variant-numeric à normal : sans cette règle, posée en dernier, ces éléments reprendraient
+   les chiffres proportionnels de Space Grotesk et la mise en page sautillerait. */
 :is(.now-pct, .now-card-pct, .now-status, .now-meta, .nav-badge, .tab-badge, .section-count,
     .results-count, .bdg, .reconnect-card, .toast-notification, .session-version, .alb-format,
     .r-format, .alb-sous, .rm) {
