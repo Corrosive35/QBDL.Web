@@ -104,6 +104,21 @@ button, input, select, textarea { font-family: inherit; }
 
 h1, h2, h3, h4 { font-family: var(--t2-titre); font-weight: 600; letter-spacing: -.02em; }
 
+/* Pas de cadre bleu au tapotement (Android, WebView de l'APK) : sur écran tactile, l'appui a son
+   propre retour en verre (@media (hover: none)). */
+html { -webkit-tap-highlight-color: transparent; }
+
+/* Ni menu de lien ni aperçu d'image à l'appui long (iOS). */
+:is(a, button, img) { -webkit-touch-callout: none; }
+
+/* L'habillage ne se sélectionne pas : un clic glissé ne surligne plus les commandes. Le contenu
+   (titres, artistes, textes) reste sélectionnable pour être copié. */
+:is(.sidebar, .tabbar, .search-tabs, button, .btn, .lnk, .ic, .bdg, .nav-badge, .tab-badge,
+    .section-head, .lang-switch, .token, .template-help-toggle, .template-subsection > summary) {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
 /* Focus clavier : un contour décalé, et non une ombre, que les box-shadow des boutons
    écraseraient. Les champs ont leur propre bordure de focus. */
 :is(a, button, select, summary, [tabindex]):focus-visible {
@@ -1128,7 +1143,6 @@ select {
     color: var(--t2-texte);
     font-size: 0.9em;
     font-weight: 600;
-    user-select: none;
     list-style: none;
     display: flex;
     align-items: center;
@@ -1176,7 +1190,6 @@ select {
     color: var(--text-secondary);
     margin-bottom: 6px;
     cursor: pointer;
-    user-select: none;
     list-style: none;
 }
 
@@ -1207,7 +1220,6 @@ select {
     color: var(--t2-texte);
     cursor: pointer;
     transition: border-color .15s, background .15s;
-    user-select: none;
 }
 
 .token:hover {
@@ -1836,6 +1848,40 @@ select {
         color: var(--t2-texte);
         background: var(--t2-verre);
     }
+
+    /* Retour d'appui, à la place du cadre bleu du système : l'état de survol du bureau, le temps
+       du tapotement. Après les règles ci-dessus, qu'il doit emporter pendant l'appui. */
+    .btn-primary:active:not(:disabled) { background: var(--t2-texte-2); }
+    .btn-secondary:active:not(:disabled) { background: var(--t2-verre-fort); }
+    .btn-danger:active:not(:disabled),
+    .btn-outline:active:not(:disabled) { background: var(--t2-survol); }
+    .ic:active:not(:disabled) { background: var(--t2-verre); color: var(--t2-texte); }
+    .lnk:active { text-decoration-color: var(--t2-texte); }
+    .alb-caps button:active:not(:disabled) { background: var(--t2-survol); }
+    .alb.is-sel .alb-caps button:active:not(:disabled) { background: rgba(8, 9, 14, .06); }
+    .tab:not(.active):active,
+    .nav-link:not(.active):active { background: var(--t2-survol); color: var(--t2-texte); }
+    .search-tab:active:not(:disabled),
+    .lang-switch button:not(.active):active { color: var(--t2-texte); }
+    .template-help-toggle:active { color: var(--t2-texte-2); }
+    .artist-toggle:active { background: var(--t2-survol); }
+    .quality-btn:not(.active):active { background: var(--t2-verre-fort); }
+    .now-card:active { background: var(--t2-verre-fort); }
+    .user-label-alert:active { background: var(--t2-texte-2); }
+}
+
+/* Écran tactile : un appui long ouvrirait la sélection de texte au lieu d'agir. Restent
+   sélectionnables les champs (coller une URL), le journal et les erreurs, qu'on peut copier. */
+@media (hover: none) and (pointer: coarse) {
+    body { -webkit-user-select: none; user-select: none; }
+
+    :is(input, textarea, select, [contenteditable], .log-output, .auth-error, .qrow-err) {
+        -webkit-user-select: text;
+        user-select: text;
+    }
+
+    /* Une pochette, une icône ou un lien ne se détache pas sous le doigt à l'appui long. */
+    :is(a, img) { -webkit-user-drag: none; }
 }
 
 /* ── Bandeau de reconnexion ────────────────────────────────────────────────────
