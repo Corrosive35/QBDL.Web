@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-11-22
+
 ### Added
 - **Image de développement `:dev`.** Chaque push sur la branche `dev` construit, teste puis publie
   `thimble9057/qobuzdlx.web:dev` (amd64 et arm64). Elle ne publie jamais `latest` ni de tag de
