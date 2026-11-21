@@ -44,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   habillés dans le nouveau style ; les formulaires de connexion ne changent pas.
 - **Fond animé par les pages** : les pochettes affichées (résultats, file) tapissent le fond, en
   gris et floutées.
+- **Nouvelle icône d'application**, aux couleurs de l'interface : une flèche posée sur les
+  sillons, pour l'onglet du navigateur comme pour l'écran d'accueil.
 
 ### Fixed
 - **Plantage en boucle au démarrage quand le dossier de configuration n'existait pas sur

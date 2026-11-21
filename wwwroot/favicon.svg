@@ -1,7 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- « Q » géométrique. La queue démarre à l'intérieur de l'anneau (36,36) et le traverse :
-       c'est ce qui la distingue d'une loupe, dont la poignée resterait à l'extérieur. -->
-  <rect width="64" height="64" rx="14" fill="#16213e"/>
-  <circle cx="32" cy="32" r="14" fill="none" stroke="#e94560" stroke-width="6"/>
-  <path d="M36 36 L46 46" fill="none" stroke="#e94560" stroke-width="6" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="32" height="32">
+<!-- QBDL · favicon B4, réduction pour 16 à 32 px : flèche épaissie et deux sillons seulement,
+     sur un carré nuit arrondi pour rester lisible sur une barre d'onglets claire comme sombre. -->
+<rect width="512" height="512" rx="112" fill="#08090E"/>
+<path d="M256 300L150 194L195 149L224 178V88A32 32 0 0 1 288 88V178L317 149L362 194Z" fill="#FFFFFF"/>
+<path d="M156 300A100 100 0 0 0 356 300" fill="none" stroke="#FFFFFF" stroke-opacity="1" stroke-width="44" stroke-linecap="round"/>
+<path d="M91 300A165 165 0 0 0 421 300" fill="none" stroke="#FFFFFF" stroke-opacity=".55" stroke-width="44" stroke-linecap="round"/>
 </svg>
