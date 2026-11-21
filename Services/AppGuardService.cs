@@ -6,12 +6,12 @@ using QBDL.Web.Models;
 namespace QBDL.Web.Services;
 
 /// <summary>
-/// Service scoped (une instance par circuit Blazor / onglet) : l'utilisateur connecté sur ce circuit.
+/// Service scoped (une instance par circuit Blazor) : l'utilisateur connecté sur ce circuit.
 /// </summary>
 /// <remarks>
-/// La connexion elle-même ne passe pas par ici mais par POST /auth/unlock, qui dépose un cookie
-/// persistant : sans lui, l'état vivait dans le circuit et le moindre rechargement redemandait le
-/// mot de passe — intenable sur mobile, où le système gèle et tue les WebView.
+/// La connexion passe par POST /auth/unlock, qui dépose un cookie persistant : un état gardé dans
+/// le circuit redemanderait le mot de passe à chaque rechargement, intenable dans une WebView que
+/// le système gèle et tue.
 /// </remarks>
 public class AppGuardService
 {
@@ -33,13 +33,10 @@ public class AppGuardService
     }
 
     /// <summary>
-    /// Identifiant du compte connecté, "" s'il n'y en a pas.
-    ///
-    /// Synchrone à dessein. Le ClaimsPrincipal est déposé dans le AuthenticationStateProvider
-    /// avant le premier rendu : par le tag helper &lt;component&gt; au prérendu, puis par la
-    /// CircuitFactory au démarrage du circuit, à partir de l'utilisateur du handshake WebSocket —
-    /// qui porte lui aussi le cookie. La tâche est donc toujours déjà terminée, ce qui évite de
-    /// rendre un premier état « verrouillé » avant de se raviser.
+    /// Identifiant du compte connecté, "" s'il n'y en a pas. Synchrone à dessein : le
+    /// ClaimsPrincipal est déposé avant le premier rendu (au prérendu, puis par la CircuitFactory à
+    /// partir du handshake WebSocket, qui porte aussi le cookie). La tâche est donc toujours
+    /// terminée, ce qui évite un premier rendu « verrouillé ».
     /// </summary>
     public string UserId
     {
@@ -76,10 +73,7 @@ public class AppGuardService
     public bool IsLockedOut => _gate.IsLockedOut;
     public int RemainingSeconds => _gate.RemainingSeconds;
 
-    /// <summary>
-    /// Hash password with PBKDF2 + random salt.
-    /// Returns base64 string: salt(16) + hash(32).
-    /// </summary>
+    /// <summary>PBKDF2 avec sel aléatoire ; renvoie salt(16) + hash(32) en base64.</summary>
     public static string HashPassword(string password)
     {
         var salt = RandomNumberGenerator.GetBytes(SaltSize);
@@ -91,22 +85,14 @@ public class AppGuardService
     }
 
     /// <summary>
-    /// Reconnaît un hachage SHA256 hexadécimal issu d'une version antérieure : sans sel et sur un
-    /// seul tour, donc à la portée d'une table précalculée si settings.json venait à fuir.
+    /// Reconnaît un ancien hachage SHA256 hexadécimal, sans sel et sur un seul tour : celui du mot
+    /// de passe d'accès 1.6, repris par le compte « admin ». POST /auth/unlock le remplace par du
+    /// PBKDF2 au prochain déverrouillage réussi, seul instant où le mot de passe est connu en clair.
     /// </summary>
-    /// <remarks>
-    /// Sert à le remplacer par du PBKDF2 au prochain déverrouillage réussi — le seul instant où
-    /// l'application détient le mot de passe en clair. La migration elle-même a lieu dans le
-    /// gestionnaire POST /auth/unlock. Un tel hachage ne peut plus venir que du mot de passe d'accès
-    /// 1.6, repris tel quel par le compte « admin » à la migration vers les comptes.
-    /// </remarks>
     public static bool IsLegacyHash(string storedHash) =>
         storedHash.Length == 64 && storedHash.All(c => "0123456789abcdef".Contains(c));
 
-    /// <summary>
-    /// Verify password against stored PBKDF2 hash.
-    /// Also supports legacy SHA256 hex hashes for migration.
-    /// </summary>
+    /// <summary>Accepte aussi l'ancien hachage SHA256 (voir <see cref="IsLegacyHash"/>).</summary>
     public static bool VerifyPassword(string password, string storedHash)
     {
         if (IsLegacyHash(storedHash))

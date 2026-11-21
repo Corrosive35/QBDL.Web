@@ -1,0 +1,68 @@
+@inject DownloadService Download
+@inject AppGuardService Guard
+@inject LocalizationService Loc
+@implements IDisposable
+
+@* Mini-carte « En cours » de la barre latérale : l'élément de la file en cours de téléchargement,
+   pour l'utilisateur connecté seulement. Composant à part : il suit la progression sans faire
+   redessiner toute la coquille à chaque mise à jour. *@
+@if (_item is { } it)
+{
+    <a class="now-card" href="/telechargement" aria-label='@Loc.T("shell.now.aria", it.Label, _percent)'>
+        <span class="now-card-row">
+            @if (!string.IsNullOrEmpty(it.Thumbnail))
+            {
+                <img src="@it.Thumbnail" alt="" loading="lazy" />
+            }
+            else
+            {
+                <span class="now-card-thumb" aria-hidden="true"></span>
+            }
+            <span class="now-card-text">
+                <span class="now-card-cap">@Loc["shell.now"]</span>
+                <span class="now-card-title">@it.Label</span>
+            </span>
+            <span class="now-card-pct" aria-hidden="true">@_percent<small>%</small></span>
+        </span>
+        <span class="now-card-bar" aria-hidden="true"><i style="width:@(_percent)%"></i></span>
+    </a>
+}
+
+@code {
+    private string _userId = "";
+    private QueueItem? _item;
+    private int _percent;
+
+    protected override void OnInitialized()
+    {
+        _userId = Guard.UserId;
+        Refresh();
+        Download.OnQueueChanged += OnChanged;
+        Download.OnProgressChanged += OnChanged;
+    }
+
+    // Les événements arrivent depuis les workers de téléchargement : le calcul se fait dans le
+    // contexte du circuit, et le rendu seulement si l'élément ou le pourcentage a changé.
+    private void OnChanged(string? ownerId)
+    {
+        if (ownerId != null && ownerId != _userId) return;
+        InvokeAsync(() =>
+        {
+            var before = (_item?.Id, _percent);
+            Refresh();
+            if (before != (_item?.Id, _percent)) StateHasChanged();
+        });
+    }
+
+    private void Refresh()
+    {
+        _item = Download.QueueSnapshot(_userId).FirstOrDefault(i => i.Status == QueueItemStatus.Running);
+        _percent = _item == null ? 0 : Math.Clamp(Download.ProgressFor(_userId).Percent, 0, 100);
+    }
+
+    public void Dispose()
+    {
+        Download.OnQueueChanged -= OnChanged;
+        Download.OnProgressChanged -= OnChanged;
+    }
+}

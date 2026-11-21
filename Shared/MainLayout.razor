@@ -1,17 +1,32 @@
 @inherits LayoutComponentBase
 @using Microsoft.AspNetCore.WebUtilities
 @inject QobuzApiService Api
-@inject SettingsService Settings
 @inject AppGuardService Guard
 @inject UserStore Users
 @inject LocalizationService Loc
 @inject DownloadService Download
+@inject AmbianceService Ambiance
 @implements IDisposable
 
 @{
     var needsSetup = !Users.HasUsers;
     var account = Guard.Account;
+    var covers = Ambiance.Covers;
 }
+
+@* Fond « Sillon + Mosaïque » (app.css), sous tout le reste. Le mur n'existe que si la page
+   affichée a fourni des pochettes, répétées pour couvrir l'écran. *@
+<div class="fond-sillon-mosaique" aria-hidden="true">
+    @if (covers.Count > 0)
+    {
+        <div class="fsm-mur">
+            @for (var i = 0; i < AmbianceService.MaxCovers; i++)
+            {
+                <img src="@covers[i % covers.Count]" alt="" loading="lazy" decoding="async" />
+            }
+        </div>
+    }
+</div>
 
 @if (needsSetup)
 {
@@ -19,9 +34,9 @@
         <div class="auth-shell">
             <div class="auth-card">
                 <div class="card">
-                    <div style="text-align:center;margin-bottom:20px;">
-                        <h2 style="color:var(--accent);font-size:1.8em;">QBDL</h2>
-                        <p style="color:var(--text-secondary);font-size:0.85em;">@Loc["setup.subtitle"]</p>
+                    <div class="auth-head">
+                        <h2 class="auth-logo">QBDL</h2>
+                        <p class="auth-subtitle">@Loc["setup.subtitle"]</p>
                     </div>
 
                     @if (_setupError != null)
@@ -59,9 +74,9 @@ else if (account == null)
         <div class="auth-shell">
             <div class="auth-card">
                 <div class="card">
-                    <div style="text-align:center;margin-bottom:20px;">
-                        <h2 style="color:var(--accent);font-size:1.8em;">QBDL</h2>
-                        <p style="color:var(--text-secondary);font-size:0.85em;">@Loc["lock.subtitle"]</p>
+                    <div class="auth-head">
+                        <h2 class="auth-logo">QBDL</h2>
+                        <p class="auth-subtitle">@Loc["lock.subtitle"]</p>
                     </div>
 
                     @if (Guard.IsLockedOut)
@@ -114,70 +129,71 @@ else
         }
         else
         {
-            @* Barre supérieure et voile : masqués par CSS au-dessus de 768px, où la barre
-               latérale reprend sa place dans le flux. *@
-            <header class="app-topbar">
-                <button class="topbar-burger" @onclick="ToggleMenu" aria-label='@Loc["nav.menu"]'>&#9776;</button>
-                <span class="topbar-title">QBDL</span>
-            </header>
-            <div class="sidebar-backdrop @(_menuOpen ? "open" : "")" @onclick="CloseMenu"></div>
+            var remaining = Download.RemainingCount(Guard.UserId);
 
-            <nav class="sidebar @(_menuOpen ? "open" : "")">
-                <div class="sidebar-logo">QBDL</div>
-                <div class="sidebar-user">
-                    <strong>@account.Username</strong>
-                    @* Le compte Qobuz est celui de toute l'instance : il est rappelé sous l'identifiant
-                       de l'utilisateur, pour qu'on sache avec quel abonnement on télécharge. *@
-                    @if (!string.IsNullOrEmpty(Settings.Settings.UserDisplayName))
+            @* Bureau : barre latérale. Sous 768px, le CSS la remplace par la barre d'onglets, et
+               le bloc Session passe en bas des Paramètres. Libellés dans des <span> : un nœud
+               texte nu deviendrait un item flex anonyme, blancs d'indentation compris. *@
+            <aside class="sidebar" aria-label='@Loc["nav.main"]'>
+                <a class="sidebar-logo" href="/">QBDL</a>
+                <nav class="sidebar-nav">
+                    <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">
+                        <NavIcon Name="search" /><span>@Loc["nav.search"]</span>
+                    </NavLink>
+                    <NavLink class="nav-link" href="/telechargement">
+                        <NavIcon Name="download" /><span>@Loc["nav.download"]</span>
+                        @if (remaining > 0)
+                        {
+                            <span class="nav-badge">@remaining</span>
+                        }
+                    </NavLink>
+                    <NavLink class="nav-link" href="/settings">
+                        <NavIcon Name="settings" /><span>@Loc["nav.settings"]</span>
+                    </NavLink>
+                    @if (account.IsAdmin)
                     {
-                        <span class="sidebar-qobuz" title='@Loc["nav.qobuzAccount"]'>Qobuz · @Settings.Settings.UserDisplayName</span>
+                        <NavLink class="nav-link" href="/users">
+                            <NavIcon Name="users" /><span>@Loc["nav.users"]</span>
+                        </NavLink>
                     }
-                    @* Sans abonnement, UserLabel est vide et la barre latérale n'affichait donc
-                       rien du tout : le compte paraissait normal jusqu'au premier téléchargement.
-                       La pastille d'alerte prend ici la place du libellé d'offre. *@
-                    @if (!Settings.Settings.HasSubscription)
-                    {
-                        <a class="user-label user-label-alert" href="/settings"
-                           title='@Loc["account.badge.noneTitle"]'>@Loc["account.badge.none"]</a>
-                    }
-                    else if (IsSubscriptionExpired)
-                    {
-                        <a class="user-label user-label-alert" href="/settings"
-                           title='@Loc["account.badge.expiredTitle"]'>@Loc["account.badge.expired"]</a>
-                    }
-                    else if (!string.IsNullOrEmpty(Settings.Settings.UserLabel))
-                    {
-                        <span class="user-label">@Settings.Settings.UserLabel</span>
-                    }
-                </div>
-                <NavLink class="nav-link" href="/" Match="NavLinkMatch.All">@Loc["nav.search"]</NavLink>
-                @* Le libellé est enveloppé dans un <span> : entre deux éléments, l'espacement du
-                   source est ignoré par le flex, alors qu'un nœud texte nu deviendrait un item
-                   anonyme avec ses blancs d'indentation. *@
-                <NavLink class="nav-link" href="/telechargement">
-                    <span>@Loc["nav.download"]</span>
-                    @if (Download.RemainingCount(Guard.UserId) is var remaining && remaining > 0)
-                    {
-                        <span class="nav-badge">@remaining</span>
-                    }
+                </nav>
+                <NowCard />
+                <div class="nav-spacer"></div>
+                <SessionPanel Class="session-sidebar" />
+            </aside>
+
+            <main class="main-content">
+                @Body
+            </main>
+
+            @* Mobile : barre d'onglets, masquée au-dessus de 768px et pendant la saisie au clavier. *@
+            <nav class="tabbar" aria-label='@Loc["nav.main"]'>
+                <NavLink class="tab" href="/" Match="NavLinkMatch.All">
+                    <span class="tab-icon"><NavIcon Name="search" /></span>
+                    <span class="tab-label">@Loc["nav.search"]</span>
                 </NavLink>
-                <NavLink class="nav-link" href="/settings">@Loc["nav.settings"]</NavLink>
+                <NavLink class="tab" href="/telechargement">
+                    <span class="tab-icon">
+                        <NavIcon Name="download" />
+                        @if (remaining > 0)
+                        {
+                            <span class="tab-badge">@remaining</span>
+                        }
+                    </span>
+                    <span class="tab-label">@Loc["nav.download"]</span>
+                </NavLink>
+                <NavLink class="tab" href="/settings">
+                    <span class="tab-icon"><NavIcon Name="settings" /></span>
+                    <span class="tab-label">@Loc["nav.settings"]</span>
+                </NavLink>
                 @if (account.IsAdmin)
                 {
-                    <NavLink class="nav-link" href="/users">@Loc["nav.users"]</NavLink>
+                    <NavLink class="tab" href="/users">
+                        <span class="tab-icon"><NavIcon Name="users" /></span>
+                        <span class="tab-label">@Loc["nav.users"]</span>
+                    </NavLink>
                 }
-                <div class="nav-spacer"></div>
-                @* Déconnecte de l'application, et elle seule : le compte Qobuz est partagé par tous
-                   les utilisateurs, il ne se déconnecte que depuis les Paramètres, par un admin. *@
-                <form method="post" action="/auth/lock" class="nav-form">
-                    <button type="submit" class="nav-link">@Loc["nav.logout"]</button>
-                </form>
-                <LanguageSwitch />
-                <div class="sidebar-version">v@(AppVersion)</div>
             </nav>
-            <div class="main-content">
-                @Body
-            </div>
         }
     </div>
 }
@@ -198,23 +214,13 @@ else
         "users.error.emptyPassword",
     };
 
-    private bool IsSubscriptionExpired => Settings.Settings.IsSubscriptionExpired();
-
     // Chemin à réafficher après le POST de déverrouillage, pour ne pas ramener systématiquement
     // à l'accueil quelqu'un qui rouvrait la page Téléchargement.
     private string _returnUrl = "/";
 
-    // Tiroir de navigation : n'a d'effet que sous 768px, où le CSS sort la barre latérale du flux.
-    private bool _menuOpen;
-
     // Capturé au premier rendu : les événements de la file arrivent depuis les workers, hors du
     // circuit, et n'ont qu'à comparer un identifiant.
     private string _userId = "";
-
-    private static readonly string AppVersion =
-        System.Reflection.Assembly.GetExecutingAssembly().GetName().Version is { } v
-            ? $"{v.Major}.{v.Minor}.{v.Build}"
-            : "1.7.0";
 
     [Inject] NavigationManager NavigationManager { get; set; } = default!;
 
@@ -233,11 +239,11 @@ else
 
         _userId = Guard.UserId;
 
-        NavigationManager.LocationChanged += OnLocationChanged;
-        // OnQueueChanged et non OnProgressChanged : la pastille n'a besoin de savoir que lorsque la
-        // file change, quelques fois par minute. L'autre événement redessinerait la barre latérale
-        // à chaque bloc de 80 Ko reçu.
+        // OnQueueChanged et non OnProgressChanged : les pastilles n'ont besoin de savoir que lorsque
+        // la file change, quelques fois par minute. L'autre événement redessinerait la coquille à
+        // chaque bloc de 80 Ko reçu ; la mini-carte « En cours » (NowCard) le suit seule.
         Download.OnQueueChanged += OnQueueChanged;
+        Ambiance.Changed += OnAmbianceChanged;
     }
 
     // null = changement qui concerne tout le monde (levée du blocage d'abonnement).
@@ -246,22 +252,11 @@ else
         if (ownerId == null || ownerId == _userId) InvokeAsync(StateHasChanged);
     }
 
-    // Un seul point de branchement pour refermer le tiroir après une navigation, plutôt qu'un
-    // @onclick sur chacun des liens.
-    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
-    {
-        if (!_menuOpen) return;
-        _menuOpen = false;
-        InvokeAsync(StateHasChanged);
-    }
-
-    private void ToggleMenu() => _menuOpen = !_menuOpen;
-
-    private void CloseMenu() => _menuOpen = false;
+    private void OnAmbianceChanged() => InvokeAsync(StateHasChanged);
 
     public void Dispose()
     {
-        NavigationManager.LocationChanged -= OnLocationChanged;
         Download.OnQueueChanged -= OnQueueChanged;
+        Ambiance.Changed -= OnAmbianceChanged;
     }
 }

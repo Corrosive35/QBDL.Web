@@ -1,13 +1,30 @@
 # Publication de l'image Docker.
 #
-# Pousser un tag « v<Version> » (par exemple v1.8.0) construit l'image sur les serveurs de GitHub,
-# pour amd64 et arm64 comme les versions précédentes, et la publie sur Docker Hub sous deux tags :
-# la version et « latest ». Rien ne se construit en local.
+# Release : pousser un tag « v<Version> » (par exemple v1.8.0) construit l'image sur les serveurs
+# de GitHub, pour amd64 et arm64 comme les versions précédentes, la teste, puis la publie sur
+# Docker Hub sous deux tags : la version et « latest ». Rien ne se construit en local.
 #
-# Lancement manuel (onglet Actions → « Docker image » → « Run workflow ») : même construction,
-# mais rien n'est publié. Utile pour vérifier qu'une branche compile avant de poser le tag.
+# Développement : chaque push sur la branche « dev » construit et teste l'image, puis la publie
+# sous le seul tag « dev » (amd64 + arm64), à tirer sur le serveur de test :
+#   docker pull thimble9057/qobuzdlx.web:dev
+# Une branche dev ne publie jamais « latest » ni de tag de version. L'image s'annonce
+# « <Version>-dev+<commit> » (par exemple 1.8.0-dev+abc1234) dans la barre latérale et /healthz,
+# grâce à l'argument APP_VERSION du Dockerfile, que seule la branche dev renseigne. Un nouveau
+# push sur dev annule la construction dev en cours ; un tag n'est jamais annulé.
 #
-# Livrer une version : <Version> dans QBDL.Web.csproj et section du CHANGELOG, commit, puis
+# Test avant publication (dev, tags et lancement manuel) : l'image amd64 est chargée sur le
+# runner et démarrée ; /healthz doit répondre « QBDL.Web » avec la version attendue, et la page
+# d'accueil doit répondre. Elle est démarrée une seconde fois avec /config et /downloads
+# appartenant à root, comme quand Docker crée un dossier d'hôte absent. En cas d'échec, les
+# journaux du conteneur sont affichés et rien n'est publié.
+#
+# Lancement manuel (onglet Actions → « Docker image » → « Run workflow ») : même construction et
+# même test, mais rien n'est publié. Utile pour vérifier qu'une branche compile avant de poser le
+# tag.
+#
+# Cycle : le travail s'accumule sur dev (image :dev), puis dev est fusionnée dans main au moment de
+# livrer. Livrer une version : <Version> dans QBDL.Web.csproj et section du CHANGELOG, commit sur
+# main, puis
 #   git tag -a v1.8.0 -m "QBDL.Web 1.8.0" && git push origin main v1.8.0
 #
 # Secret attendu (Settings → Secrets and variables → Actions) : DOCKERHUB_TOKEN, jeton d'accès
@@ -18,15 +35,17 @@ name: Docker image
 on:
   push:
     tags: ["v*"]
+    branches: [dev]
   workflow_dispatch:
 
 permissions:
   contents: read
 
-# Deux pushs du même tag ne doivent pas publier en même temps.
+# Deux pushs du même tag ne doivent pas publier en même temps. Sur dev, seul le dernier commit
+# compte : un nouveau push annule la construction en cours.
 concurrency:
   group: docker-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.ref == 'refs/heads/dev' }}
 
 env:
   # Dépôt Docker Hub d'origine, conservé lors du renommage du projet : les installations
@@ -56,15 +75,140 @@ jobs:
             echo "::error::Le tag $GITHUB_REF_NAME ne correspond pas à <Version>$version</Version> (QBDL.Web.csproj). Attendu : v$version."
             exit 1
           fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+          # Ce que l'image doit annoncer, et l'argument de build qui l'obtient (vide = <Version>).
+          if [ "$GITHUB_REF" = "refs/heads/dev" ]; then
+            expected="$version-dev+${GITHUB_SHA::7}"
+            build_arg="$expected"
+            tags="$IMAGE:dev"
+          else
+            expected="$version"
+            build_arg=""
+            tags=$(printf '%s\n%s' "$IMAGE:$version" "$IMAGE:latest")
+          fi
+
+          # Publication : push d'un tag v* ou de la branche dev. Jamais en lancement manuel.
+          publish=false
+          if [ "$GITHUB_EVENT_NAME" = "push" ]; then
+            publish=true
+          fi
+
+          {
+            echo "version=$version"
+            echo "expected=$expected"
+            echo "build_arg=$build_arg"
+            echo "publish=$publish"
+            echo "tags<<EOF"
+            echo "$tags"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "Version annoncée attendue : $expected — publication : $publish"
 
       # Pour arm64, seule l'étape « apk add » de l'image finale tourne sous émulation : le SDK .NET
       # compile nativement sur le runner (voir le Dockerfile).
       - uses: docker/setup-qemu-action@v4
       - uses: docker/setup-buildx-action@v4
 
+      # Image amd64 chargée dans le Docker du runner, pour la démarrer. Ses couches restent dans le
+      # cache du builder et resservent à la construction multi-architecture qui suit.
+      - name: Construction de l'image de test (amd64)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: qbdl-web:test
+          build-args: |
+            APP_VERSION=${{ steps.version.outputs.build_arg }}
+          cache-from: type=gha
+
+      - name: Test de l'image
+        env:
+          EXPECTED: ${{ steps.version.outputs.expected }}
+        run: |
+          fail() {
+            echo "::error::$1"
+            echo "----- Journaux du conteneur -----"
+            docker logs qbdl-web-test 2>&1 || true
+            exit 1
+          }
+
+          docker run -d --name qbdl-web-test -p 8080:8080 qbdl-web:test
+
+          # Démarrage : jusqu'à 2 minutes pour que /healthz réponde.
+          body=""
+          for _ in $(seq 1 60); do
+            if [ "$(docker inspect -f '{{.State.Running}}' qbdl-web-test)" != "true" ]; then
+              fail "Le conteneur s'est arrêté pendant le démarrage."
+            fi
+            if body=$(curl -fs --max-time 5 http://localhost:8080/healthz); then
+              break
+            fi
+            body=""
+            sleep 2
+          done
+          [ -n "$body" ] || fail "/healthz n'a pas répondu en 2 minutes."
+          echo "/healthz : $body"
+
+          app=$(jq -r '.app' <<< "$body") || fail "/healthz ne renvoie pas du JSON valide."
+          version=$(jq -r '.version' <<< "$body") || fail "/healthz ne renvoie pas du JSON valide."
+          [ "$app" = "QBDL.Web" ] || fail "/healthz annonce app=« $app », attendu « QBDL.Web »."
+          [ "$version" = "$EXPECTED" ] || fail "/healthz annonce version=« $version », attendu « $EXPECTED »."
+
+          # Page d'accueil (ou écran de connexion / création du compte), redirections suivies.
+          code=$(curl -sSL --max-time 15 -o /dev/null -w '%{http_code}' http://localhost:8080/) \
+            || fail "La page d'accueil ne répond pas."
+          [ "$code" = "200" ] || fail "La page d'accueil répond HTTP $code, attendu 200."
+          echo "Page d'accueil : HTTP $code"
+
+          docker rm -f qbdl-web-test > /dev/null
+
+      # Cas réel : Docker crée en root un dossier d'hôte absent. Le point d'entrée doit reprendre
+      # /config (récursivement) et le seul dossier /downloads (sans toucher à son contenu), puis
+      # lancer l'application sous qbdlx, jamais en root.
+      - name: "Test : volumes créés par root"
+        run: |
+          fail() {
+            echo "::error::$1"
+            echo "----- Journaux du conteneur -----"
+            docker logs qbdl-web-root 2>&1 || true
+            exit 1
+          }
+
+          cfg=$(mktemp -d)
+          dl=$(mktemp -d)
+          sudo mkdir "$dl/bibliotheque"
+          sudo chown root:root "$cfg" "$dl" "$dl/bibliotheque"
+          sudo chmod 755 "$cfg" "$dl" "$dl/bibliotheque"
+
+          docker run -d --name qbdl-web-root -p 8081:8080 -v "$cfg:/config" -v "$dl:/downloads" qbdl-web:test
+
+          ok=""
+          for _ in $(seq 1 60); do
+            if [ "$(docker inspect -f '{{.State.Running}}' qbdl-web-root)" != "true" ]; then
+              fail "Le conteneur s'est arrêté au démarrage avec des volumes appartenant à root."
+            fi
+            if curl -fs --max-time 5 http://localhost:8081/healthz > /dev/null; then
+              ok=1
+              break
+            fi
+            sleep 2
+          done
+          [ -n "$ok" ] || fail "/healthz n'a pas répondu en 2 minutes avec des volumes appartenant à root."
+
+          [ "$(stat -c %u "$cfg")" = "1000" ] || fail "/config n'a pas été repris par 1000."
+          docker exec -u 1000:1000 qbdl-web-root touch /config/.test-ecriture || fail "/config n'est pas inscriptible par 1000."
+          [ "$(stat -c %u "$dl")" = "1000" ] || fail "/downloads n'a pas été repris par 1000."
+          [ "$(stat -c %u "$dl/bibliotheque")" = "0" ] || fail "Le contenu de /downloads a été modifié."
+          # PID 1 est l'application (exec de su-exec) : son propriétaire est l'utilisateur qui la fait tourner.
+          [ "$(docker exec qbdl-web-root stat -c %u /proc/1)" = "1000" ] || fail "L'application tourne en root."
+          echo "Volumes root : /config et /downloads repris par 1000, contenu de /downloads intact, application en 1000."
+
+          docker rm -f qbdl-web-root > /dev/null
+
       - name: Connexion à Docker Hub
-        if: github.ref_type == 'tag'
+        if: steps.version.outputs.publish == 'true'
         uses: docker/login-action@v4
         with:
           username: ${{ env.DOCKERHUB_USER }}
@@ -75,13 +219,13 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.ref_type == 'tag' }}
-          tags: |
-            ${{ env.IMAGE }}:${{ steps.version.outputs.version }}
-            ${{ env.IMAGE }}:latest
+          push: ${{ steps.version.outputs.publish == 'true' }}
+          tags: ${{ steps.version.outputs.tags }}
+          build-args: |
+            APP_VERSION=${{ steps.version.outputs.build_arg }}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.version=${{ steps.version.outputs.expected }}
             org.opencontainers.image.revision=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max

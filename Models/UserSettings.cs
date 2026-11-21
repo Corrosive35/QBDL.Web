@@ -1,13 +1,9 @@
 namespace QBDL.Web.Models;
 
 /// <summary>
-/// Réglages de téléchargement propres à un utilisateur.
+/// Réglages de téléchargement propres à un utilisateur. Mêmes noms et valeurs par défaut que dans
+/// <see cref="AppSettings"/> en 1.6 : désérialiser l'ancien settings.json suffit à les reprendre.
 /// </summary>
-/// <remarks>
-/// Ces champs vivaient dans <see cref="AppSettings"/> jusqu'à la 1.6. Noms et valeurs par défaut
-/// sont restés identiques à dessein : désérialiser l'ancien settings.json dans cette classe suffit
-/// à les récupérer, sans table de correspondance à maintenir.
-/// </remarks>
 public class UserSettings
 {
     // Download — fixé par l'administrateur, en lecture seule pour l'utilisateur.

@@ -12,6 +12,9 @@
 
 <h3 style="margin-bottom:16px;">@Loc["settings.title"]</h3>
 
+@* Sections en colonnes (trois au bureau, une sur mobile) : chacune reste d'un seul tenant. *@
+<div class="settings-cols">
+
 <!-- Compte Qobuz — en premier : sans abonnement actif, rien d'autre sur cette page n'a d'effet.
      Partagé par tous les utilisateurs : chacun le consulte, seul un administrateur le déconnecte. -->
 <div class="card">
@@ -62,7 +65,7 @@
         }
         else if (Guard.IsAdmin)
         {
-            <button class="btn btn-secondary" @onclick="() => _confirmDisconnect = true">@Loc["settings.account.disconnect"]</button>
+            <button class="btn btn-outline" @onclick="() => _confirmDisconnect = true">@Loc["settings.account.disconnect"]</button>
         }
         @if (!string.IsNullOrEmpty(_accountMessage))
         {
@@ -91,7 +94,6 @@
     </div>
 </div>
 
-<!-- Quality -->
 <div class="card">
     <div class="card-title">@Loc["settings.quality.title"]</div>
     <div class="quality-group">
@@ -105,7 +107,6 @@
     </div>
 </div>
 
-<!-- Templates -->
 <div class="card">
     <div class="card-title">@Loc["settings.templates.title"]</div>
     <div class="settings-grid">
@@ -139,7 +140,6 @@
         </div>
     </div>
 
-    <!-- Template Variables Reference -->
     <details class="template-help" style="margin-top:16px;">
         <summary class="template-help-toggle">@Loc["settings.templates.varsToggle"]</summary>
         <div class="template-help-content">
@@ -147,106 +147,106 @@
             <div class="template-section">
                 <div class="template-section-title">@Loc["settings.templates.section.release"]</div>
                 <div class="template-tokens">
-                    <span class="token" @onclick='() => CopyToken("%AlbumID%")'>%AlbumID%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumURL%")'>%AlbumURL%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumGenre%")'>%AlbumGenre%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumComposer%")'>%AlbumComposer%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumTitle%")'>%AlbumTitle%</span>
-                    <span class="token" @onclick='() => CopyToken("%Label%")'>%Label%</span>
-                    <span class="token" @onclick='() => CopyToken("%Copyright%")'>%Copyright%</span>
-                    <span class="token" @onclick='() => CopyToken("%UPC%")'>%UPC%</span>
-                    <span class="token" @onclick='() => CopyToken("%ReleaseDate%")'>%ReleaseDate%</span>
-                    <span class="token" @onclick='() => CopyToken("%Year%")'>%Year%</span>
-                    <span class="token" @onclick='() => CopyToken("%ReleaseType%")'>%ReleaseType%</span>
-                    <span class="token" @onclick='() => CopyToken("%ArtistName%")'>%ArtistName%</span>
-                    <span class="token" @onclick='() => CopyToken("%Format%")'>%Format%</span>
-                    <span class="token" @onclick='() => CopyToken("%FormatWithQuality%")'>%FormatWithQuality%</span>
-                    <span class="token" @onclick='() => CopyToken("%FormatWithHiResQuality%")'>%FormatWithHiResQuality%</span>
-                    <span class="token" @onclick='() => CopyToken("%BitDepth%")'>%BitDepth%</span>
-                    <span class="token" @onclick='() => CopyToken("%SampleRate%")'>%SampleRate%</span>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumID%")'>%AlbumID%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumURL%")'>%AlbumURL%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumGenre%")'>%AlbumGenre%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumComposer%")'>%AlbumComposer%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumTitle%")'>%AlbumTitle%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%Label%")'>%Label%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%Copyright%")'>%Copyright%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%UPC%")'>%UPC%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%ReleaseDate%")'>%ReleaseDate%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%Year%")'>%Year%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%ReleaseType%")'>%ReleaseType%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%ArtistName%")'>%ArtistName%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%Format%")'>%Format%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%FormatWithQuality%")'>%FormatWithQuality%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%FormatWithHiResQuality%")'>%FormatWithHiResQuality%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%BitDepth%")'>%BitDepth%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%SampleRate%")'>%SampleRate%</button>
                 </div>
             </div>
 
             <details class="template-subsection">
                 <summary>@Loc["settings.templates.section.parentalRelease"]</summary>
                 <div class="template-tokens">
-                    <span class="token" @onclick='() => CopyToken("%AlbumPA%")'>%AlbumPA%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAShort%")'>%AlbumPAShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifEx%")'>%AlbumPAifEx%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifExShort%")'>%AlbumPAifExShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifCl%")'>%AlbumPAifCl%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifClShort%")'>%AlbumPAifClShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAEnclosed%")'>%AlbumPAEnclosed%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAEnclosed[]%")'>%AlbumPAEnclosed[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAEnclosedShort%")'>%AlbumPAEnclosedShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAEnclosedShort[]%")'>%AlbumPAEnclosedShort[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosed%")'>%AlbumPAifExEnclosed%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosed[]%")'>%AlbumPAifExEnclosed[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosedShort%")'>%AlbumPAifExEnclosedShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosedShort[]%")'>%AlbumPAifExEnclosedShort[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosed%")'>%AlbumPAifClEnclosed%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosed[]%")'>%AlbumPAifClEnclosed[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosedShort%")'>%AlbumPAifClEnclosedShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosedShort[]%")'>%AlbumPAifClEnclosedShort[]%</span>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPA%")'>%AlbumPA%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAShort%")'>%AlbumPAShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifEx%")'>%AlbumPAifEx%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifExShort%")'>%AlbumPAifExShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifCl%")'>%AlbumPAifCl%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifClShort%")'>%AlbumPAifClShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAEnclosed%")'>%AlbumPAEnclosed%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAEnclosed[]%")'>%AlbumPAEnclosed[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAEnclosedShort%")'>%AlbumPAEnclosedShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAEnclosedShort[]%")'>%AlbumPAEnclosedShort[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosed%")'>%AlbumPAifExEnclosed%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosed[]%")'>%AlbumPAifExEnclosed[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosedShort%")'>%AlbumPAifExEnclosedShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifExEnclosedShort[]%")'>%AlbumPAifExEnclosedShort[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosed%")'>%AlbumPAifClEnclosed%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosed[]%")'>%AlbumPAifClEnclosed[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosedShort%")'>%AlbumPAifClEnclosedShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%AlbumPAifClEnclosedShort[]%")'>%AlbumPAifClEnclosedShort[]%</button>
                 </div>
             </details>
 
             <div class="template-section">
                 <div class="template-section-title">@Loc["settings.templates.section.track"]</div>
                 <div class="template-tokens">
-                    <span class="token" @onclick='() => CopyToken("%TrackArtist%")'>%TrackArtist%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackComposer%")'>%TrackComposer%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackID%")'>%TrackID%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackNumber%")'>%TrackNumber%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackTitle%")'>%TrackTitle%</span>
-                    <span class="token" @onclick='() => CopyToken("%ISRC%")'>%ISRC%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackFormat%")'>%TrackFormat%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackFormatWithQuality%")'>%TrackFormatWithQuality%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackFormatWithHiResQuality%")'>%TrackFormatWithHiResQuality%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackBitDepth%")'>%TrackBitDepth%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackSampleRate%")'>%TrackSampleRate%</span>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackArtist%")'>%TrackArtist%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackComposer%")'>%TrackComposer%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackID%")'>%TrackID%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackNumber%")'>%TrackNumber%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackTitle%")'>%TrackTitle%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%ISRC%")'>%ISRC%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackFormat%")'>%TrackFormat%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackFormatWithQuality%")'>%TrackFormatWithQuality%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackFormatWithHiResQuality%")'>%TrackFormatWithHiResQuality%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackBitDepth%")'>%TrackBitDepth%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackSampleRate%")'>%TrackSampleRate%</button>
                 </div>
             </div>
 
             <details class="template-subsection">
                 <summary>@Loc["settings.templates.section.parentalTrack"]</summary>
                 <div class="template-tokens">
-                    <span class="token" @onclick='() => CopyToken("%TrackPA%")'>%TrackPA%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAShort%")'>%TrackPAShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifEx%")'>%TrackPAifEx%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifExShort%")'>%TrackPAifExShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifCl%")'>%TrackPAifCl%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifClShort%")'>%TrackPAifClShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAEnclosed%")'>%TrackPAEnclosed%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAEnclosed[]%")'>%TrackPAEnclosed[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAEnclosedShort%")'>%TrackPAEnclosedShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAEnclosedShort[]%")'>%TrackPAEnclosedShort[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifExEnclosed%")'>%TrackPAifExEnclosed%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifExEnclosed[]%")'>%TrackPAifExEnclosed[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifExEnclosedShort%")'>%TrackPAifExEnclosedShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifExEnclosedShort[]%")'>%TrackPAifExEnclosedShort[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifClEnclosed%")'>%TrackPAifClEnclosed%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifClEnclosed[]%")'>%TrackPAifClEnclosed[]%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifClEnclosedShort%")'>%TrackPAifClEnclosedShort%</span>
-                    <span class="token" @onclick='() => CopyToken("%TrackPAifClEnclosedShort[]%")'>%TrackPAifClEnclosedShort[]%</span>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPA%")'>%TrackPA%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAShort%")'>%TrackPAShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifEx%")'>%TrackPAifEx%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifExShort%")'>%TrackPAifExShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifCl%")'>%TrackPAifCl%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifClShort%")'>%TrackPAifClShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAEnclosed%")'>%TrackPAEnclosed%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAEnclosed[]%")'>%TrackPAEnclosed[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAEnclosedShort%")'>%TrackPAEnclosedShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAEnclosedShort[]%")'>%TrackPAEnclosedShort[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifExEnclosed%")'>%TrackPAifExEnclosed%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifExEnclosed[]%")'>%TrackPAifExEnclosed[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifExEnclosedShort%")'>%TrackPAifExEnclosedShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifExEnclosedShort[]%")'>%TrackPAifExEnclosedShort[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifClEnclosed%")'>%TrackPAifClEnclosed%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifClEnclosed[]%")'>%TrackPAifClEnclosed[]%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifClEnclosedShort%")'>%TrackPAifClEnclosedShort%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%TrackPAifClEnclosedShort[]%")'>%TrackPAifClEnclosedShort[]%</button>
                 </div>
             </details>
 
             <div class="template-section">
                 <div class="template-section-title">@Loc["settings.templates.section.playlist"]</div>
                 <div class="template-tokens">
-                    <span class="token" @onclick='() => CopyToken("%PlaylistID%")'>%PlaylistID%</span>
-                    <span class="token" @onclick='() => CopyToken("%PlaylistTitle%")'>%PlaylistTitle%</span>
-                    <span class="token" @onclick='() => CopyToken("%Format%")'>%Format%</span>
-                    <span class="token" @onclick='() => CopyToken("%FormatWithQuality%")'>%FormatWithQuality%</span>
-                    <span class="token" @onclick='() => CopyToken("%FormatWithHiResQuality%")'>%FormatWithHiResQuality%</span>
+                    <button type="button" class="token" @onclick='() => CopyToken("%PlaylistID%")'>%PlaylistID%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%PlaylistTitle%")'>%PlaylistTitle%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%Format%")'>%Format%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%FormatWithQuality%")'>%FormatWithQuality%</button>
+                    <button type="button" class="token" @onclick='() => CopyToken("%FormatWithHiResQuality%")'>%FormatWithHiResQuality%</button>
                 </div>
             </div>
 
             <div class="template-section">
                 <div class="template-section-title">@Loc["settings.templates.section.cd"]</div>
                 <div class="template-tokens">
-                    <span class="token" @onclick='() => CopyToken("%DiscNumber%")'>%DiscNumber%</span>
+                    <button type="button" class="token" @onclick='() => CopyToken("%DiscNumber%")'>%DiscNumber%</button>
                 </div>
             </div>
 
@@ -255,36 +255,35 @@
     </details>
 </div>
 
-<!-- Tagging Options -->
 <div class="card">
     <div class="card-title">@Loc["settings.tagging.title"]</div>
     <div class="settings-grid">
-        <div class="setting-item"><input type="checkbox" @bind="S.AlbumTag" @bind:after="Save" /><label>@Loc["settings.tag.album"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.AlbumArtistTag" @bind:after="Save" /><label>@Loc["settings.tag.albumArtist"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.ArtistTag" @bind:after="Save" /><label>@Loc["settings.tag.artist"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.TrackTitleTag" @bind:after="Save" /><label>@Loc["settings.tag.trackTitle"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.TrackTag" @bind:after="Save" /><label>@Loc["settings.tag.trackNumber"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.TotalTracksTag" @bind:after="Save" /><label>@Loc["settings.tag.totalTracks"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.DiscTag" @bind:after="Save" /><label>@Loc["settings.tag.disc"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.TotalDiscsTag" @bind:after="Save" /><label>@Loc["settings.tag.totalDiscs"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.GenreTag" @bind:after="Save" /><label>@Loc["settings.tag.genre"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.YearTag" @bind:after="Save" /><label>@Loc["settings.tag.year"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.ReleaseDateTag" @bind:after="Save" /><label>@Loc["settings.tag.releaseDate"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.ComposerTag" @bind:after="Save" /><label>@Loc["settings.tag.composer"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.CopyrightTag" @bind:after="Save" /><label>@Loc["settings.tag.copyright"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.LabelTag" @bind:after="Save" /><label>@Loc["settings.tag.label"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.IsrcTag" @bind:after="Save" /><label>@Loc["settings.tag.isrc"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.UpcTag" @bind:after="Save" /><label>@Loc["settings.tag.upc"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.TypeTag" @bind:after="Save" /><label>@Loc["settings.tag.type"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.ExplicitTag" @bind:after="Save" /><label>@Loc["settings.tag.explicit"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.ImageTag" @bind:after="Save" /><label>@Loc["settings.tag.artwork"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.UrlTag" @bind:after="Save" /><label>@Loc["settings.tag.url"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.MergeArtistNames" @bind:after="Save" /><label>@Loc["settings.tag.mergeArtists"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.MergeArtistNamesInDirNames" @bind:after="Save" /><label>@Loc["settings.tag.mergeArtistsDirs"]</label></div>
+        <label class="setting-item"><input type="checkbox" @bind="S.AlbumTag" @bind:after="Save" /><span>@Loc["settings.tag.album"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.AlbumArtistTag" @bind:after="Save" /><span>@Loc["settings.tag.albumArtist"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.ArtistTag" @bind:after="Save" /><span>@Loc["settings.tag.artist"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.TrackTitleTag" @bind:after="Save" /><span>@Loc["settings.tag.trackTitle"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.TrackTag" @bind:after="Save" /><span>@Loc["settings.tag.trackNumber"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.TotalTracksTag" @bind:after="Save" /><span>@Loc["settings.tag.totalTracks"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.DiscTag" @bind:after="Save" /><span>@Loc["settings.tag.disc"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.TotalDiscsTag" @bind:after="Save" /><span>@Loc["settings.tag.totalDiscs"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.GenreTag" @bind:after="Save" /><span>@Loc["settings.tag.genre"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.YearTag" @bind:after="Save" /><span>@Loc["settings.tag.year"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.ReleaseDateTag" @bind:after="Save" /><span>@Loc["settings.tag.releaseDate"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.ComposerTag" @bind:after="Save" /><span>@Loc["settings.tag.composer"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.CopyrightTag" @bind:after="Save" /><span>@Loc["settings.tag.copyright"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.LabelTag" @bind:after="Save" /><span>@Loc["settings.tag.label"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.IsrcTag" @bind:after="Save" /><span>@Loc["settings.tag.isrc"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.UpcTag" @bind:after="Save" /><span>@Loc["settings.tag.upc"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.TypeTag" @bind:after="Save" /><span>@Loc["settings.tag.type"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.ExplicitTag" @bind:after="Save" /><span>@Loc["settings.tag.explicit"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.ImageTag" @bind:after="Save" /><span>@Loc["settings.tag.artwork"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.UrlTag" @bind:after="Save" /><span>@Loc["settings.tag.url"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.MergeArtistNames" @bind:after="Save" /><span>@Loc["settings.tag.mergeArtists"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.MergeArtistNamesInDirNames" @bind:after="Save" /><span>@Loc["settings.tag.mergeArtistsDirs"]</span></label>
     </div>
 
     <div style="margin-top:12px;">
-        <div class="setting-item"><input type="checkbox" @bind="S.CommentTag" @bind:after="Save" /><label>@Loc["settings.tag.comment"]</label></div>
+        <label class="setting-item"><input type="checkbox" @bind="S.CommentTag" @bind:after="Save" /><span>@Loc["settings.tag.comment"]</span></label>
         @if (S.CommentTag)
         {
             <div class="form-group" style="margin-top:8px;">
@@ -294,12 +293,11 @@
     </div>
 
     <div style="margin-top:12px;">
-        <div class="setting-item"><input type="checkbox" @bind="S.ExplicitTagInTitle" @bind:after="Save" /><label>@Loc["settings.tag.explicitInTitle"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.CleanTagInTitle" @bind:after="Save" /><label>@Loc["settings.tag.cleanInTitle"]</label></div>
+        <label class="setting-item"><input type="checkbox" @bind="S.ExplicitTagInTitle" @bind:after="Save" /><span>@Loc["settings.tag.explicitInTitle"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.CleanTagInTitle" @bind:after="Save" /><span>@Loc["settings.tag.cleanInTitle"]</span></label>
     </div>
 </div>
 
-<!-- Artwork -->
 <div class="card">
     <div class="card-title">@Loc["settings.artwork.title"]</div>
     <div class="settings-grid">
@@ -326,19 +324,18 @@
             </select>
         </div>
     </div>
-    <div class="setting-item"><input type="checkbox" @bind="S.DontSaveArtworkToDisk" @bind:after="Save" /><label>@Loc["settings.artwork.dontSave"]</label></div>
+    <label class="setting-item"><input type="checkbox" @bind="S.DontSaveArtworkToDisk" @bind:after="Save" /><span>@Loc["settings.artwork.dontSave"]</span></label>
 </div>
 
-<!-- Advanced -->
 <div class="card">
     <div class="card-title">@Loc["settings.advanced.title"]</div>
     <div class="settings-grid">
-        <div class="setting-item"><input type="checkbox" @bind="S.StreamableCheck" @bind:after="Save" /><label>@Loc["settings.advanced.streamable"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.FixMD5s" @bind:after="Save" /><label>@Loc["settings.advanced.fixMd5"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.DownloadGoodies" @bind:after="Save" /><label>@Loc["settings.advanced.goodies"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.DownloadSpeed" @bind:after="Save" /><label>@Loc["settings.advanced.speed"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.UseItemPosInPlaylist" @bind:after="Save" /><label>@Loc["settings.advanced.playlistPos"]</label></div>
-        <div class="setting-item"><input type="checkbox" @bind="S.LogFailedDownloads" @bind:after="Save" /><label>@Loc["settings.advanced.logFailed"]</label></div>
+        <label class="setting-item"><input type="checkbox" @bind="S.StreamableCheck" @bind:after="Save" /><span>@Loc["settings.advanced.streamable"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.FixMD5s" @bind:after="Save" /><span>@Loc["settings.advanced.fixMd5"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.DownloadGoodies" @bind:after="Save" /><span>@Loc["settings.advanced.goodies"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.DownloadSpeed" @bind:after="Save" /><span>@Loc["settings.advanced.speed"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.UseItemPosInPlaylist" @bind:after="Save" /><span>@Loc["settings.advanced.playlistPos"]</span></label>
+        <label class="setting-item"><input type="checkbox" @bind="S.LogFailedDownloads" @bind:after="Save" /><span>@Loc["settings.advanced.logFailed"]</span></label>
     </div>
 
     <div class="form-group" style="margin-top:12px;">
@@ -351,7 +348,6 @@
     </div>
 </div>
 
-<!-- Mon compte -->
 <div class="card">
     <div class="card-title">@Loc["settings.me.title"]</div>
     <div class="form-group">
@@ -386,6 +382,12 @@
         <button type="submit" class="btn btn-primary" style="margin-top:8px;">@Loc["settings.me.change"]</button>
     </form>
 </div>
+
+</div>
+
+@* Mobile : la barre latérale cède la place aux onglets, et le bloc Session (langue, déconnexion,
+   version) se retrouve ici. Masqué au bureau, où la barre latérale le porte déjà. *@
+<SessionPanel Class="session-page" />
 
 @if (_showCopied)
 {
@@ -474,9 +476,8 @@
                 SettingsSvc.Update(s => s.ApplyAccountStatus(user));
                 _accountMessage = Loc["settings.account.refreshed"];
 
-                // Les droits sont revenus : relancer les files laissées en attente — celles de tous
-                // les utilisateurs, le compte étant partagé —, plutôt que d'obliger chacun à cliquer
-                // « relancer » élément par élément.
+                // Droits revenus : relancer les files en attente de tous les utilisateurs (compte
+                // partagé), plutôt que d'obliger chacun à cliquer « relancer » élément par élément.
                 if (A.HasSubscription) Download.ResumeAfterSubscriptionBlock();
             }
         }
@@ -497,10 +498,8 @@
         Users.Update(Guard.UserId, u => { u.Settings.QualityFormat = formatId; u.Settings.AudioFormat = audioFormat; });
     }
 
-    /// <summary>
-    /// Ce que faisait autrefois « Déconnexion » dans la barre latérale. Celle-ci ne déconnecte plus
-    /// que de l'application : le compte Qobuz étant partagé, le vider couperait tout le monde.
-    /// </summary>
+    /// <summary>Déconnecte le compte Qobuz de l'instance, donc tout le monde : la barre latérale, elle,
+    /// ne déconnecte que de l'application.</summary>
     private void DisconnectQobuz()
     {
         // Revérifié ici : le bouton masqué ne suffit pas à interdire l'appel.

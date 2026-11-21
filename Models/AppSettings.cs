@@ -37,11 +37,9 @@ public class AppSettings
 
     public string Theme { get; set; } = "dark";
 
-    /// <summary>
-    /// Reporte la fiche de compte lue chez Qobuz dans les réglages persistés. Appelé à la connexion
-    /// et à chaque revalidation du jeton, pour que l'interface n'ait pas à rappeler l'API à chaque
-    /// rendu. Une seule implémentation afin que les deux chemins ne divergent jamais.
-    /// </summary>
+    /// <summary>Reporte la fiche de compte Qobuz dans les réglages persistés, à la connexion comme à
+    /// chaque revalidation du jeton : une seule implémentation, pour que les deux chemins ne
+    /// divergent pas.</summary>
     public void ApplyAccountStatus(QobuzUserInfo? user)
     {
         var p = user?.Credential?.Parameters;
@@ -62,18 +60,11 @@ public class AppSettings
     }
 
     /// <summary>
-    /// Abonnement résilié dont la date de fin est passée.
-    ///
-    /// La date seule ne suffit pas : sur un abonnement reconduit automatiquement, end_date marque
-    /// la fin de la période en cours et peut se retrouver dans le passé le temps que Qobuz la
-    /// rafraîchisse — afficher « Expiré » dans ce cas serait une fausse alerte. On exige donc que
-    /// Qobuz ait lui-même marqué l'abonnement comme non reconduit. Une date absente ou illisible
-    /// est traitée comme non expirée, pour la même raison.
-    ///
-    /// Le cas franchement expiré, lui, est déjà couvert par <see cref="HasSubscription"/> : Qobuz
-    /// vide alors credential.parameters.
-    ///
-    /// Une méthode et non une propriété : Newtonsoft sérialiserait cette dernière dans settings.json.
+    /// Abonnement résilié dont la date de fin est passée. La date seule ne suffit pas : sur un
+    /// abonnement reconduit, end_date peut rester dans le passé le temps que Qobuz la rafraîchisse.
+    /// On exige donc qu'il soit marqué non reconduit ; une date absente ou illisible ne compte pas.
+    /// Le cas franchement expiré relève de <see cref="HasSubscription"/>. Méthode et non propriété :
+    /// Newtonsoft sérialiserait une propriété dans settings.json.
     /// </summary>
     public bool IsSubscriptionExpired()
     {

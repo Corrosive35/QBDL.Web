@@ -1,7 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- Variante maskable : le fond couvre tout le carré et le glyphe tient dans le disque central
-       de rayon 25,6 (les 80 % centraux), le lanceur pouvant rogner les bords selon son masque. -->
-  <rect width="64" height="64" fill="#16213e"/>
-  <circle cx="32" cy="32" r="14" fill="none" stroke="#e94560" stroke-width="6"/>
-  <path d="M36 36 L46 46" fill="none" stroke="#e94560" stroke-width="6" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<!-- QBDL · icône B4, source opaque des PNG 192, 512 et maskable : le motif tient dans un disque de
+     rayon 186, sous les 204,8 de la zone maskable, d'où un seul fichier pour les deux usages. -->
+<defs><linearGradient id="nuit" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#15161E"/><stop offset="1" stop-color="#08090E"/></linearGradient></defs>
+<rect width="512" height="512" fill="url(#nuit)"/>
+<!-- Sillons du fond de l'interface, à 6 % : un rappel visible en grand, invisible et sans gêne en petit. -->
+<g fill="none" stroke="#FFFFFF" stroke-opacity=".06" stroke-width="2"><circle cx="560" cy="-40" r="140"/><circle cx="560" cy="-40" r="166"/><circle cx="560" cy="-40" r="192"/><circle cx="560" cy="-40" r="218"/><circle cx="560" cy="-40" r="244"/><circle cx="560" cy="-40" r="270"/><circle cx="560" cy="-40" r="296"/><circle cx="560" cy="-40" r="322"/><circle cx="560" cy="-40" r="348"/><circle cx="560" cy="-40" r="374"/><circle cx="560" cy="-40" r="400"/><circle cx="560" cy="-40" r="426"/><circle cx="560" cy="-40" r="452"/><circle cx="560" cy="-40" r="478"/><circle cx="560" cy="-40" r="504"/><circle cx="560" cy="-40" r="530"/><circle cx="560" cy="-40" r="556"/><circle cx="560" cy="-40" r="582"/><circle cx="560" cy="-40" r="608"/><circle cx="560" cy="-40" r="634"/><circle cx="560" cy="-40" r="660"/><circle cx="560" cy="-40" r="686"/><circle cx="560" cy="-40" r="712"/><circle cx="560" cy="-40" r="738"/><circle cx="560" cy="-40" r="764"/></g>
+<!-- La flèche pose sa pointe au centre des sillons : blanc d'action, puis verre à 62 et 34 %. -->
+<path d="M256 276L178 198L209 167L234 192V92A22 22 0 0 1 278 92V192L303 167L334 198Z" fill="#FFFFFF"/>
+<path d="M190 276A66 66 0 0 0 322 276" fill="none" stroke="#FFFFFF" stroke-opacity="1" stroke-width="24" stroke-linecap="round"/><path d="M146 276A110 110 0 0 0 366 276" fill="none" stroke="#FFFFFF" stroke-opacity=".62" stroke-width="24" stroke-linecap="round"/><path d="M102 276A154 154 0 0 0 410 276" fill="none" stroke="#FFFFFF" stroke-opacity=".34" stroke-width="24" stroke-linecap="round"/>
 </svg>

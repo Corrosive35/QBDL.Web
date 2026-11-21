@@ -5,14 +5,13 @@ using Newtonsoft.Json;
 namespace QBDL.Web.Services;
 
 /// <summary>
-/// Traduction de l'interface. Les dictionnaires sont chargés une fois au démarrage depuis
-/// wwwroot/languages/{fr,en}.json, d'où le singleton.
+/// Traduction de l'interface : dictionnaires wwwroot/languages/{fr,en}.json chargés une fois au
+/// démarrage, d'où le singleton.
 /// </summary>
 /// <remarks>
-/// La langue est propre à chaque utilisateur et ne vit pas ici : le middleware de localisation la
-/// fixe pour chaque requête (<see cref="ResolveLanguage"/>), et un circuit Blazor conserve la culture
-/// de la connexion qui l'a ouvert. <see cref="Current"/> n'a donc qu'à la lire. Le worker de
-/// téléchargement, qui tourne hors de toute requête, passe par <see cref="In"/>.
+/// La langue n'est pas stockée ici : le middleware la fixe pour chaque requête
+/// (<see cref="ResolveLanguage"/>) et un circuit Blazor garde la culture de la connexion qui l'a
+/// ouvert. Le worker de téléchargement, hors de toute requête, passe par <see cref="In"/>.
 /// </remarks>
 public class LocalizationService
 {
@@ -52,11 +51,8 @@ public class LocalizationService
     /// </summary>
     public string P(string key, int count) => Plural(Current, CultureInfo.CurrentCulture, key, count);
 
-    /// <summary>
-    /// Traducteur lié à une langue donnée, indépendant de la culture du thread. Pour le worker de
-    /// téléchargement : il écrit le journal de chaque utilisateur dans la langue de celui-ci, quelle que
-    /// soit la requête qui l'a démarré.
-    /// </summary>
+    /// <summary>Traducteur lié à une langue, indépendant de la culture du thread : le worker écrit
+    /// ainsi le journal de chaque utilisateur dans la langue de celui-ci.</summary>
     public Translator In(string? lang)
     {
         var normalized = Normalize(lang);
@@ -147,11 +143,8 @@ public class LocalizationService
         return key;
     }
 
-    /// <summary>
-    /// L'image installe ICU, les cultures nommées existent donc. Le repli invariant ne sert que si
-    /// l'application tourne en globalization-invariant mode : les traductions viennent des fichiers
-    /// JSON et n'en souffrent pas, seuls les formats de nombres et de dates du journal changent.
-    /// </summary>
+    /// <summary>L'image installe ICU. Le repli invariant ne sert qu'en globalization-invariant mode,
+    /// où seuls les formats de nombres et de dates du journal changent.</summary>
     private static CultureInfo CultureFor(string lang)
     {
         try { return CultureInfo.GetCultureInfo(CultureNameFor(lang)); }

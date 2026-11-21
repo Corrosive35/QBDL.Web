@@ -79,7 +79,6 @@ public class TemplateService
 
     public string ApplyTemplate(string template, QobuzAlbum? album, QobuzTrack? track, QobuzPlaylist? playlist, UserSettings s)
     {
-        // Lowercase all %tags%
         template = PercentRegex.Replace(template, m => m.Value.ToLower());
 
         // Preserve path separators
@@ -98,7 +97,6 @@ public class TemplateService
 
         string fileFormat = s.AudioFormat.ToUpper().TrimStart('.');
 
-        // Track tags
         if (track != null)
         {
             int padLen = album?.TracksCount.ToString().Length ?? 2;
@@ -119,13 +117,11 @@ public class TemplateService
             template = template.Replace("%trackartist%", performerName);
             template = template.Replace("%trackformat%", fileFormat);
 
-            // Track format with quality
             template = RenameFormatTemplate(template, s.QualityFormat, fileFormat,
                 track.MaximumBitDepth, track.MaximumSamplingRate,
                 "%trackformatwithhiresquality%", "%trackformatwithquality%");
         }
 
-        // Album tags
         if (album != null)
         {
             template = ReplaceParentalWarningTags(template, album.ParentalWarning);
@@ -154,13 +150,11 @@ public class TemplateService
                 .Replace("%albumtitle%", albumTitle)
                 .Replace("%format%", fileFormat);
 
-            // Album format with quality
             template = RenameFormatTemplate(template, s.QualityFormat, fileFormat,
                 album.MaximumBitDepth, album.MaximumSamplingRate,
                 "%formatwithhiresquality%", "%formatwithquality%");
         }
 
-        // Playlist tags
         if (playlist != null)
         {
             template = template
@@ -168,7 +162,6 @@ public class TemplateService
                 .Replace("%playlisttitle%", playlist.Name)
                 .Replace("%format%", fileFormat);
 
-            // Playlist format with quality (use album data if available, else just format name)
             if (album != null)
             {
                 template = RenameFormatTemplate(template, s.QualityFormat, fileFormat,
@@ -186,7 +179,6 @@ public class TemplateService
         // CD / Disc tags (also handle here as fallback)
         template = template.Replace("%discnumber%", "");
 
-        // Sanitize
         template = MakeSafeFilename(template);
         template = template.Replace("{slash}", "/");
         template = SpacesRegex.Replace(template, " ").Trim();
@@ -197,7 +189,6 @@ public class TemplateService
 
     /// <summary>
     /// Replaces %FormatWithQuality% and %FormatWithHiResQuality% based on format_id and audio specs.
-    /// Ported from original QobuzDownloaderX RenameTemplates.RenameFormatTemplate()
     /// </summary>
     private static string RenameFormatTemplate(string template, string formatId, string fileFormat,
         int maximumBitDepth, double maximumSamplingRate,
@@ -228,7 +219,6 @@ public class TemplateService
                 }
                 else if (maximumSamplingRate < 192)
                 {
-                    // Merge quality into hires placeholder
                     template = template.Replace(qualityPlaceholder, hiResPlaceholder);
 
                     if (maximumSamplingRate < 96)
@@ -266,7 +256,6 @@ public class TemplateService
                 break;
 
             default:
-                // Unknown format, just replace with fileFormat
                 template = template
                     .Replace(hiResPlaceholder, fileFormat)
                     .Replace(qualityPlaceholder, fileFormat);
@@ -297,12 +286,8 @@ public class TemplateService
         return album.Artist?.Name ?? "Unknown Artist";
     }
 
-    /// <summary>
-    /// Complete parental warning tag replacement matching original QobuzDownloaderX RenameTemplates.
-    /// </summary>
     private static string ReplaceParentalWarningTags(string template, bool isExplicit)
     {
-        // ── Track PA tags ──
         template = template.Replace("%trackpa%", isExplicit ? "Explicit" : "Clean");
         template = template.Replace("%trackpashort%", isExplicit ? "E" : "C");
         template = template.Replace("%trackpaifex%", isExplicit ? "Explicit" : "");
@@ -322,7 +307,6 @@ public class TemplateService
         template = template.Replace("%trackpaifclenclosedshort%", isExplicit ? "" : "(C)");
         template = template.Replace("%trackpaifclenclosedshort[]%", isExplicit ? "" : "[C]");
 
-        // ── Album PA tags ──
         template = template.Replace("%albumpa%", isExplicit ? "Explicit" : "Clean");
         template = template.Replace("%albumpashort%", isExplicit ? "E" : "C");
         template = template.Replace("%albumpaifex%", isExplicit ? "Explicit" : "");
@@ -372,9 +356,8 @@ public class TemplateService
                 sb.Append(c);
         }
 
-        // Collapse whitespace left by removed characters and trim leftover separator artifacts
-        // (e.g. a trailing " -" from a title ending in ':'). The main template path also collapses
-        // spaces, but the standalone goodies call does not \u2014 so normalize here too.
+        // Collapse whitespace left by removed characters and trim leftover separators (e.g. a trailing
+        // " -" from a title ending in ':'). The standalone goodies call skips the template's own collapse.
         var result = SpacesRegex.Replace(sb.ToString(), " ");
         return result.Trim(' ', '.', '-');
     }

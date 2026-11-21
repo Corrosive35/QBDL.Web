@@ -26,10 +26,9 @@ public enum SearchSort
 }
 
 /// <summary>
-/// Client-side sorting of already-fetched search results (the Qobuz search endpoints expose no
-/// sort parameter). All methods return a new sequence and never mutate the source list, so
-/// <see cref="SearchSort.Relevance"/> always restores the exact order returned by the API.
-/// LINQ's OrderBy is stable, so ties keep their original relevance ranking.
+/// Client-side sorting of fetched results (Qobuz search has no sort parameter). Never mutates the
+/// source, so <see cref="SearchSort.Relevance"/> restores the API order; OrderBy is stable, so ties
+/// keep their relevance rank.
 /// </summary>
 public static class SearchSorter
 {

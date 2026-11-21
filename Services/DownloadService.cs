@@ -12,24 +12,21 @@ public enum EnqueueResult { Added, Requeued, AlreadyQueued, InvalidUrl }
 
 public class QueueItem
 {
-    /// <summary>Identité interne stable : sert de @key Blazor et de cible aux actions de l'UI.
-    /// Ne participe jamais à l'unicité, qui repose sur <see cref="Url"/>.</summary>
+    /// <summary>Sert de @key et de cible aux actions ; l'unicité repose sur <see cref="Url"/>.</summary>
     public string Id { get; init; } = Guid.NewGuid().ToString("N")[..8];
 
-    /// <summary>Compte qui a ajouté l'élément : ses réglages, son dossier et sa langue servent au
-    /// téléchargement, et lui seul le voit et peut agir dessus.</summary>
+    /// <summary>Compte qui a ajouté l'élément : ses réglages, son dossier et sa langue s'appliquent,
+    /// et lui seul le voit.</summary>
     public string OwnerId { get; init; } = "";
 
-    /// <summary>Clé métier : URL canonique play.qobuz.com/{kind}/{refId}, sans requête ni fragment.
-    /// C'est elle qui porte l'unicité — par propriétaire —, le grisage des boutons et la marque
-    /// « déjà téléchargé ».</summary>
+    /// <summary>URL canonique play.qobuz.com/{kind}/{refId}, sans requête ni fragment : porte
+    /// l'unicité (par propriétaire), le grisage des boutons et la marque « déjà téléchargé ».</summary>
     public string Url { get; init; } = "";
 
     public string Kind { get; init; } = "";   // album | track | artist | playlist | label | user
     public string RefId { get; init; } = "";
 
-    // Affichage. Renseignés par l'appelant quand il les a sous la main (page Recherche) ; repli sur
-    // l'URL quand l'ajout vient du champ libre de la page Téléchargement.
+    // Fournis par la page Recherche ; repli sur l'URL pour un ajout depuis le champ libre.
     public string Label { get; set; } = "";
     public string? SubLabel { get; set; }
     public string? Thumbnail { get; set; }
@@ -52,7 +49,6 @@ public class DownloadProgress
     public string CurrentItem { get; set; } = "";
     public string Speed { get; set; } = "";
 
-    /// <summary>Un élément de la file est en cours de traitement.</summary>
     public bool IsRunning { get; set; }
 
     /// <summary>La file a été drainée au moins une fois et est au repos.</summary>
@@ -60,23 +56,23 @@ public class DownloadProgress
 
     public QobuzAlbum? CurrentAlbum { get; set; }
 
+    /// <summary>Piste en cours (base 0) et nombre de pistes d'un album ou d'une playlist, pour les
+    /// segments de la page Téléchargement. Steps vaut 0 ailleurs : la page affiche une barre.</summary>
+    public int Step { get; set; }
+    public int Steps { get; set; }
+
     /// <summary>Identifiant de l'élément en cours, pour surligner sa ligne sans comparer de libellé.</summary>
     public string? CurrentQueueItemId { get; set; }
 }
 
-/// <summary>Demande d'ajout à la file. Les champs d'affichage sont facultatifs : la page Recherche
-/// les connaît, le champ libre de la page Téléchargement non.</summary>
+/// <summary>Les champs d'affichage ne sont connus que depuis la page Recherche.</summary>
 public record QueueRequest(string Url, string? Label = null, string? SubLabel = null, string? Thumbnail = null);
 
 /// <summary>
-/// Le compte n'a pas (ou plus) les droits de streaming demandés. Qobuz ne renvoie pas d'erreur
-/// dans ce cas : l'appel aboutit avec un extrait de 30 s en MP3, que l'ancien code téléchargeait
-/// puis tentait d'étiqueter comme un FLAC — d'où des « FLAC stream not found at starting position »
-/// à répétition, sans jamais nommer la vraie cause.
-///
-/// Cette exception traverse tous les filets qui absorbent les échecs de piste : réessayer n'a
-/// aucun sens, descendre en qualité non plus, et les éléments suivants échoueraient à l'identique.
-/// Elle remonte donc jusqu'au worker, qui arrête toutes les files : le compte Qobuz est partagé.
+/// Droits de streaming insuffisants. Qobuz ne renvoie pas d'erreur : il sert un extrait MP3 de
+/// 30 s, qui finirait étiqueté comme un FLAC. Cette exception traverse les filets des pistes
+/// (réessayer ou baisser la qualité n'y change rien) et arrête toutes les files : le compte
+/// Qobuz est partagé.
 /// </summary>
 public class SubscriptionRequiredException : Exception
 {
@@ -94,18 +90,15 @@ public class DownloadService
     private readonly ILogger<DownloadService> _logger;
 
     // ─── État partagé ───
-    //
-    // Un verrou unique protège la file, les files par utilisateur (Lane : journal, worker) et les
-    // deux index dérivés. Le service est Singleton et les workers tournent hors du circuit Blazor :
-    // toute lecture destinée au rendu passe par un instantané (QueueSnapshot / LogSnapshot), jamais
-    // par la collection vive, sinon l'énumération concurrente lève « Collection was modified ».
+    // Un seul verrou pour la file, les Lane et les index dérivés. Le rendu ne lit que des
+    // instantanés (QueueSnapshot, LogSnapshot) : les workers tournent hors du circuit Blazor, et
+    // énumérer la collection vive lèverait « Collection was modified ».
     private readonly object _gate = new();
     private readonly List<QueueItem> _queue = new();
     private readonly Dictionary<string, Lane> _lanes = new();
 
-    // Index dérivés de _queue, pour que le grisage des boutons de la page Recherche ne soit pas
-    // un balayage linéaire par bouton rendu. Clés « propriétaire|url » : deux utilisateurs peuvent
-    // demander le même album, chacun dans son dossier.
+    // Index dérivés de _queue, pour griser les boutons de recherche sans balayage. Clés
+    // « propriétaire|url » : deux utilisateurs peuvent demander le même album.
     private readonly HashSet<string> _activeUrls = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _doneUrls = new(StringComparer.OrdinalIgnoreCase);
 
@@ -116,11 +109,9 @@ public class DownloadService
     private readonly CancellationTokenSource _appCts = new();
     private readonly CancellationToken _appCt;
 
-    // Le compte n'a pas les droits de streaming : tant que ce drapeau est levé, aucune file ne prend
-    // de nouvel élément. Les éléments restants échoueraient tous de la même façon, et les marquer en
-    // échec en rafale effacerait la file sans que l'utilisateur ait eu le temps de lire la cause.
-    // Global et non par file : le compte Qobuz est celui de tous. Protégé par _gate, levé par un
-    // worker et abaissé par tout ajout ou « relancer » explicite.
+    // Droits de streaming manquants : aucune file ne prend de nouvel élément, sinon toute la file
+    // passerait en échec avant qu'on ait lu la cause. Global (le compte Qobuz est partagé), sous
+    // _gate ; levé par un worker, abaissé par tout ajout ou « relancer ».
     private bool _subscriptionBlocked;
 
     private const int LogMaxLines = 1200;
@@ -129,15 +120,13 @@ public class DownloadService
     // Progression d'un utilisateur qui n'a encore rien lancé. Jamais mutée.
     private static readonly DownloadProgress IdleProgress = new();
 
-    /// <summary>Haute fréquence (pourcentage, vitesse) : étranglé à 200 ms par file, sauf appel
-    /// forcé. Porte l'identifiant du propriétaire : chaque page ne se redessine que pour le sien,
-    /// et non pour tous les transferts en cours sur l'instance.</summary>
+    /// <summary>Haute fréquence (pourcentage, vitesse), étranglé à 200 ms par file. Porte l'identifiant
+    /// du propriétaire : chaque page ne se redessine que pour le sien.</summary>
     public event Action<string?>? OnProgressChanged;
 
-    /// <summary>Basse fréquence (ajout, fin, réordonnancement) : jamais étranglé. C'est celui-là
-    /// qu'écoutent la pastille du menu et le grisage des boutons de recherche — les abonner à
-    /// OnProgressChanged les redessinerait à chaque bloc reçu. Identifiant du propriétaire, ou null
-    /// pour un changement qui concerne tout le monde (levée du blocage d'abonnement).</summary>
+    /// <summary>Basse fréquence (ajout, fin, réordonnancement), jamais étranglé : c'est lui qu'écoutent
+    /// la pastille et le grisage des boutons, pas OnProgressChanged. Identifiant du propriétaire, ou
+    /// null pour un changement qui concerne tout le monde (levée du blocage d'abonnement).</summary>
     public event Action<string?>? OnQueueChanged;
 
     private static readonly Regex QobuzStoreLinkRegex = new(
@@ -147,11 +136,8 @@ public class DownloadService
     private static readonly Regex QobuzUrlRegex = new(
         @"^https?://(?!.*https?://)(?:[\w\-]+\.)?qobuz\.com/[^\s]+$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-    /// <summary>
-    /// La file d'un utilisateur. Porte tout ce qui était unique quand l'instance n'avait qu'une file :
-    /// chaque utilisateur télécharge en parallèle des autres, avec sa progression, ses gestes
-    /// « ANNULER »/« PASSER » et son journal. Au sein d'une file, un élément à la fois, dans l'ordre.
-    /// </summary>
+    /// <summary>File d'un utilisateur, avec sa progression, ses gestes « ANNULER »/« PASSER » et son
+    /// journal. Les files tournent en parallèle ; dans une file, un élément à la fois.</summary>
     private sealed class Lane
     {
         public Lane(string ownerId) => OwnerId = ownerId;
@@ -171,11 +157,8 @@ public class DownloadService
         public long LastProgressTick;
     }
 
-    /// <summary>
-    /// Contexte d'un élément en cours. Plusieurs éléments tournant en même temps — un par
-    /// utilisateur —, il ne peut plus vivre dans des champs du service : il est passé à toute la
-    /// chaîne de téléchargement.
-    /// </summary>
+    /// <summary>Contexte d'un élément en cours, passé à toute la chaîne de téléchargement : plusieurs
+    /// éléments (un par utilisateur) peuvent tourner en même temps.</summary>
     private sealed class ItemRun
     {
         public ItemRun(Lane lane, UserSettings settings, LocalizationService.Translator l, CancellationToken ct)
@@ -189,8 +172,8 @@ public class DownloadService
         public Lane Lane { get; }
         public DownloadProgress Progress => Lane.Progress;
 
-        /// <summary>Réglages du propriétaire. La référence vive, comme avant : une modification faite
-        /// dans les Paramètres pendant un téléchargement s'applique aux pistes suivantes.</summary>
+        /// <summary>Référence vive : une modification faite dans les Paramètres pendant un téléchargement
+        /// s'applique aux pistes suivantes.</summary>
         public UserSettings Settings { get; }
 
         /// <summary>Traductions dans la langue du propriétaire, pour son journal.</summary>
@@ -221,9 +204,7 @@ public class DownloadService
         MigrateTempFolder();
     }
 
-    /// <summary>
-    /// Migrate qbdlx-temp from /downloads to /config for existing installations.
-    /// </summary>
+    /// <summary>Déplace qbdlx-temp de /downloads vers /config (installations existantes).</summary>
     private void MigrateTempFolder()
     {
         try
@@ -251,12 +232,9 @@ public class DownloadService
 
     // ─── Lecture pour l'interface ───
 
-    /// <summary>Un élément de la file de cet utilisateur est en cours de traitement. Ne grise plus
-    /// aucun bouton d'ajout : c'est tout l'intérêt de la file.</summary>
     public bool IsRunning(string ownerId) => ProgressFor(ownerId).IsRunning;
 
-    /// <summary>Progression de la file de cet utilisateur. Les champs sont mutés par son worker :
-    /// à relire à chaque rendu, comme avant.</summary>
+    /// <summary>Mutée par le worker : à relire à chaque rendu.</summary>
     public DownloadProgress ProgressFor(string ownerId)
     {
         lock (_gate) return _lanes.TryGetValue(ownerId, out var lane) ? lane.Progress : IdleProgress;
@@ -305,11 +283,8 @@ public class DownloadService
 
     // ─── Analyse d'URL ───
 
-    /// <summary>
-    /// Valide une URL Qobuz et en extrait la forme canonique play.qobuz.com/{kind}/{refId}.
-    /// Pure et statique : appelée à l'ajout, jamais au traitement, pour que deux écritures de la
-    /// même adresse (avec ou sans ?utm_source=…) produisent la même clé et donc un seul élément.
-    /// </summary>
+    /// <summary>Valide une URL Qobuz et la ramène à play.qobuz.com/{kind}/{refId}. Appelée à l'ajout :
+    /// deux écritures de la même adresse (avec ou sans ?utm_source=…) donnent un seul élément.</summary>
     public static bool TryParseQobuzUrl(string? input, out string canonicalUrl, out string kind, out string refId)
     {
         canonicalUrl = ""; kind = ""; refId = "";
@@ -404,10 +379,8 @@ public class DownloadService
 
             if (result != EnqueueResult.AlreadyQueued)
             {
-                // Ajouter un élément ou cliquer « relancer » sont des actions explicites : elles
-                // lèvent le blocage pour retenter une fois. Sans cela, une file bloquée faute
-                // d'abonnement n'aurait aucune porte de sortie. Si les droits manquent toujours,
-                // l'élément échoue de nouveau et les files se rebloquent aussitôt.
+                // Un ajout ou « relancer » lève le blocage d'abonnement pour retenter une fois, sinon une file
+                // bloquée n'aurait aucune issue. Si les droits manquent toujours, elle se rebloque aussitôt.
                 _subscriptionBlocked = false;
                 StartLaneLocked(ownerId);
             }
@@ -436,9 +409,7 @@ public class DownloadService
     }
 
     // ─── Gestes ───
-    //
-    // Tous vérifient le propriétaire ici même, et pas seulement à l'écran : un utilisateur ne peut
-    // agir que sur sa propre file.
+    // Chacun vérifie le propriétaire ici, pas seulement à l'écran.
 
     /// <summary>Saute l'album courant à l'intérieur de l'élément en cours (un artiste en compte
     /// souvent des dizaines). L'élément, lui, poursuit.</summary>
@@ -505,9 +476,8 @@ public class DownloadService
             var idx = _queue.FindIndex(i => i.Id == itemId && i.OwnerId == ownerId);
             if (idx >= 0 && _queue[idx].Status == QueueItemStatus.Pending)
             {
-                // On n'échange qu'avec un autre élément en attente du même utilisateur : les terminés,
-                // celui qui tourne et les éléments des autres gardent leur place, sinon l'ordre
-                // affiché sauterait sans raison visible.
+                // Échange seulement avec un autre élément en attente du même utilisateur : les autres
+                // gardent leur place, sinon l'ordre affiché sauterait sans raison visible.
                 var target = idx + direction;
                 while (target >= 0 && target < _queue.Count
                        && !(_queue[target].OwnerId == ownerId && _queue[target].Status == QueueItemStatus.Pending))
@@ -560,10 +530,9 @@ public class DownloadService
     }
 
     /// <summary>
-    /// Reprend les files interrompues faute d'abonnement. Appelé depuis les Paramètres après une
-    /// actualisation de l'état du compte : sans cela, les éléments restés en attente n'auraient pour
-    /// seule issue qu'un clic sur « relancer », élément par élément. Le compte étant partagé, ce sont
-    /// les files de tous les utilisateurs qui repartent.
+    /// Reprend les files bloquées faute d'abonnement, après actualisation du compte dans les
+    /// Paramètres ; sans cela, il faudrait relancer chaque élément. Le compte étant partagé, toutes
+    /// les files repartent.
     /// </summary>
     public void ResumeAfterSubscriptionBlock()
     {
@@ -634,11 +603,9 @@ public class DownloadService
     }
 
     /// <summary>
-    /// Démarrage paresseux du worker de cette file : aucun thread ne tourne tant que rien n'a été
-    /// demandé. Sous _gate, comme le retrait du worker dans <see cref="LaneLoopAsync"/> : il n'existe
-    /// donc aucune fenêtre où un ajout trouverait un worker sur le départ et resterait en attente
-    /// sans personne pour le traiter. Task.Run se contente de mettre en file d'attente du pool, donc
-    /// pas de réentrance ici.
+    /// Démarre le worker de cette file à la demande. Sous _gate, comme son retrait dans
+    /// <see cref="LaneLoopAsync"/> : un ajout ne peut pas tomber sur un worker sur le départ et
+    /// rester sans personne pour le traiter.
     /// </summary>
     private void StartLaneLocked(string ownerId)
     {
@@ -665,9 +632,8 @@ public class DownloadService
 
     private void RaiseProgress(Lane lane, bool force = false)
     {
-        // Sans cet étranglement, la boucle d'octets de DownloadStreamToFileAsync redessinerait la
-        // page à chaque bloc de 80 Ko, soit des dizaines de fois par seconde. Par file : deux
-        // téléchargements simultanés ne doivent pas se voler leurs rafraîchissements.
+        // Sans étranglement, chaque bloc de 80 Ko redessinerait la page. Par file : deux
+        // téléchargements simultanés ne se volent pas leurs rafraîchissements.
         if (!force && Environment.TickCount64 - lane.LastProgressTick < 200) return;
         lane.LastProgressTick = Environment.TickCount64;
         RaiseSafely(OnProgressChanged, lane.OwnerId, nameof(OnProgressChanged));
@@ -676,11 +642,9 @@ public class DownloadService
     private void RaiseQueueChanged(string? ownerId) => RaiseSafely(OnQueueChanged, ownerId, nameof(OnQueueChanged));
 
     /// <summary>
-    /// Invoque chaque abonné séparément, en absorbant ses exceptions. Deux raisons, toutes deux
-    /// vécues : un abonné Blazor dont le circuit vient de se fermer lève ObjectDisposedException,
-    /// et une exception remontant depuis un worker le tuerait — ou, pire, ferait passer l'élément
-    /// en cours pour un échec. Parcourir la liste d'invocation plutôt que d'appeler le délégué
-    /// multicast évite qu'un onglet mort prive les autres de leur notification.
+    /// Invoque chaque abonné séparément en absorbant ses exceptions : un circuit Blazor fermé lève
+    /// ObjectDisposedException, et une exception remontée tuerait le worker ou ferait échouer
+    /// l'élément. Un onglet mort ne prive pas les autres de leur notification.
     /// </summary>
     private void RaiseSafely(Action<string?>? handler, string? ownerId, string name)
     {
@@ -692,11 +656,8 @@ public class DownloadService
         }
     }
 
-    /// <summary>
-    /// Purge par tranches : un RemoveRange de 400 lignes toutes les 400 lignes coûte bien moins
-    /// qu'un décalage du tableau à chaque ajout. Aucun effacement automatique en dehors de cette
-    /// borne — avec une file qui enchaîne, il serait toujours arbitraire. Sous _gate.
-    /// </summary>
+    /// <summary>Purge par tranches de 400 lignes, moins coûteuse qu'un décalage à chaque ajout ; pas
+    /// d'autre effacement automatique. Sous _gate.</summary>
     private static void AppendLogLocked(Lane lane, string msg)
     {
         lane.Log.Add(msg);
@@ -716,20 +677,21 @@ public class DownloadService
 
     private void Log(ItemRun run, string msg) => Log(run.Lane.OwnerId, msg);
 
-    private void UpdateProgress(ItemRun run, int percent, string status, string currentItem = "")
+    private void UpdateProgress(ItemRun run, int percent, string status, string currentItem = "", int step = 0, int steps = 0)
     {
         run.Progress.Percent = percent;
         run.Progress.Status = status;
+        // Remis à zéro par tout appel qui ne parle pas de pistes : des segments restés d'un album
+        // précédent ne doivent pas s'afficher sous une discographie.
+        run.Progress.Step = step;
+        run.Progress.Steps = steps;
         if (!string.IsNullOrEmpty(currentItem)) run.Progress.CurrentItem = currentItem;
         RaiseProgress(run.Lane, force: true);
     }
 
     // ─── Worker ───
 
-    /// <summary>
-    /// Worker d'une file : traite les éléments en attente de son propriétaire, un par un, puis se
-    /// retire. Un worker par utilisateur, qui tournent en parallèle.
-    /// </summary>
+    /// <summary>Traite un par un les éléments en attente de son propriétaire, puis se retire.</summary>
     private async Task LaneLoopAsync(Lane lane)
     {
         var processedAny = false;
@@ -761,10 +723,8 @@ public class DownloadService
                     // tour suivant —, soit plus aucun, et il en démarre un.
                     lane.Worker = null;
 
-                    // File vidée : remettre la carte de progression au repos, sans quoi l'album et
-                    // la vitesse du dernier téléchargement resteraient affichés indéfiniment. Ici,
-                    // sous le verrou, et non après : un worker redémarré entre-temps écraserait sa
-                    // propre progression avec cette remise à zéro.
+                    // File vidée : remettre la progression au repos, sinon le dernier album resterait affiché.
+                    // Sous le verrou : un worker redémarré entre-temps verrait sinon sa progression effacée.
                     if (processedAny && !_appCt.IsCancellationRequested)
                     {
                         var p = lane.Progress;
@@ -848,8 +808,7 @@ public class DownloadService
         p.CurrentQueueItemId = item.Id;
         RaiseProgress(lane, force: true);
 
-        // Séparateur par élément : remplace l'effacement automatique du journal, qui n'a plus de
-        // sens dès lors que plusieurs téléchargements s'enchaînent.
+        // Séparateur par élément : le journal n'est jamais effacé automatiquement.
         Log(run, l.T("log.queueItemStart", item.Label));
 
         try
@@ -940,7 +899,6 @@ public class DownloadService
         var downloadPath = _templates.CreatePath(s.DownloadLocation, s.ArtistTemplate, s.AlbumTemplate, null, album, null, null, s);
         Directory.CreateDirectory(downloadPath);
 
-        // Artwork
         await DownloadArtworkAsync(run, downloadPath, album);
 
         var tracks = album.Tracks?.Items ?? new List<QobuzTrack>();
@@ -952,11 +910,10 @@ public class DownloadService
             if (run.Lane.SkipCurrent) { run.Lane.SkipCurrent = false; Log(run, run.L["log.albumSkipped"]); break; }
 
             var track = tracks[i];
-            UpdateProgress(run, (int)((double)i / total * 100), run.L.T("download.status.track", i + 1, total), _templates.FormatTrackTitle(track));
+            UpdateProgress(run, (int)((double)i / total * 100), run.L.T("download.status.track", i + 1, total), _templates.FormatTrackTitle(track), step: i, steps: total);
 
             try
             {
-                // Get full track info
                 var trackInfo = await _api.GetTrackAsync(track.Id.ToString());
                 if (trackInfo == null) { Log(run, run.L.T("log.trackUnavailable", track.TrackNumber)); continue; }
                 if (!trackInfo.Streamable && s.StreamableCheck) { Log(run, run.L.T("log.trackNotStreamable", track.TrackNumber)); continue; }
@@ -968,7 +925,6 @@ public class DownloadService
             catch (Exception ex) { Log(run, run.L.T("log.trackFailed", track.Id, ex.Message)); }
         }
 
-        // Goodies
         if (s.DownloadGoodies && album.Goodies != null)
         {
             foreach (var goody in album.Goodies)
@@ -1017,7 +973,7 @@ public class DownloadService
         {
             run.Ct.ThrowIfCancellationRequested();
             var item = tracks[i];
-            UpdateProgress(run, (int)((double)i / total * 100), run.L.T("download.status.track", i + 1, total));
+            UpdateProgress(run, (int)((double)i / total * 100), run.L.T("download.status.track", i + 1, total), step: i, steps: total);
 
             try
             {
@@ -1088,9 +1044,7 @@ public class DownloadService
     }
 
     // ─── Favorites ───
-    //
-    // Les favoris sont ceux du compte Qobuz, donc de l'instance : l'identifiant vient des réglages
-    // partagés et non de ceux de l'utilisateur.
+    // Favoris du compte Qobuz, donc de l'instance : l'identifiant vient des réglages partagés.
 
     private async Task DownloadFavoritesAlbumsAsync(ItemRun run)
     {
@@ -1151,45 +1105,36 @@ public class DownloadService
         var l = run.L;
         var ct = run.Ct;
 
-        // Build file path
         var trackTemplate = _templates.ApplyTemplate(s.TrackTemplate, album, track, playlist, s);
         var filePath = Path.Combine(downloadPath, trackTemplate.TrimEnd() + s.AudioFormat);
 
-        // Handle multi-disc
         if (track.PlaylistTrackId == null && downloadType != "track" && album.MediaCount > 1 && !string.IsNullOrEmpty(s.CdTemplate))
         {
             var cdDir = Regex.Replace(s.CdTemplate, "%DiscNumber%", track.MediaNumber.ToString(), RegexOptions.IgnoreCase);
             filePath = Path.Combine(downloadPath, cdDir, trackTemplate.TrimEnd() + s.AudioFormat);
         }
 
-        // Skip existing
         if (s.DuplicateFileMode == "skip" && System.IO.File.Exists(filePath))
         {
             Log(run, l.T("log.fileExists", track.TrackNumber));
             return;
         }
 
-        // Prepare temp path (reused across retry attempts)
         var configPath = Environment.GetEnvironmentVariable("CONFIG_PATH") ?? "/config";
         var tempDir = Path.Combine(configPath, "qbdlx-temp");
         Directory.CreateDirectory(tempDir);
 
-        // L'extension doit suivre la qualité réellement servie, et non celle demandée : la chaîne
-        // de repli ci-dessous peut descendre jusqu'au MP3 320 alors que les Paramètres annoncent du
-        // FLAC. Elle est donc recalculée à chaque palier, et le chemin final corrigé après coup.
-        // Le nom porte l'identifiant de session de l'élément : deux utilisateurs peuvent télécharger
-        // la même piste au même moment, et un nom fondé sur la seule piste ferait écrire l'un dans
-        // le fichier de l'autre.
+        // L'extension suit la qualité réellement servie, le repli pouvant descendre au MP3 320 : elle
+        // est recalculée à chaque palier et le chemin final corrigé après coup. L'identifiant de
+        // session évite que deux utilisateurs sur la même piste écrivent dans le même fichier.
         var fileExtension = s.AudioFormat;
         var tempFile = Path.Combine(tempDir, $"qbdlx_downloading-{run.SessionId}-{track.Id}{fileExtension}");
 
         var titleFormatted = _templates.FormatTrackTitle(track);
         Log(run, l.T("log.downloadingTrack", track.TrackNumber.ToString().PadLeft(2, '0'), titleFormatted));
 
-        // Try requested quality, then fall back to lower qualities if download keeps failing.
-        // For each quality we make a few silent attempts (with a fresh signed URL each time)
-        // before giving up and stepping down — most transient CDN cuts are fixed by a quick retry.
-        // Qobuz CDN sometimes throttles / cuts very-high-res files (24bit/192kHz) for certain accounts.
+        // Qualité demandée, puis inférieures : le CDN de Qobuz coupe parfois le très haut débit.
+        // Quelques essais silencieux par qualité, avec une URL signée neuve, règlent la plupart des coupures.
         const int attemptsPerQuality = 3;
         var qualityChain = BuildQualityFallbackChain(s.QualityFormat);
         Exception? lastError = null;
@@ -1229,16 +1174,10 @@ public class DownloadService
                         break;
                     }
 
-                    // Deux signaux, parce qu'aucun n'est suffisant à lui seul :
-                    //  - « sample » : Qobuz annonce explicitement un extrait de 30 s ;
-                    //  - type MIME incohérent avec la qualité demandée : on a réclamé du FLAC et
-                    //    reçu du MP3. C'est ce cas-là qui produisait les « FLAC stream not found at
-                    //    starting position » en rafale — l'extrait était écrit dans un fichier
-                    //    .flac, puis confié à l'étiqueteur qui n'y trouvait aucun flux FLAC.
-                    //
-                    // Rien à réessayer ici : les deux tentatives suivantes renverraient le même
-                    // extrait. On passe directement à la qualité inférieure, ce qui ramène 12
-                    // appels par piste à 4 dans le pire des cas.
+                    // Deux signaux, car aucun ne suffit seul : « sample » (extrait annoncé), ou un
+                    // MIME MP3 alors qu'on a demandé du FLAC (l'extrait, écrit en .flac, faisait
+                    // échouer l'étiqueteur). Réessayer renverrait le même extrait : on passe
+                    // directement à la qualité inférieure.
                     var wantsFlac = qFormat != "5";
                     // MIME absent : ne rien conclure, plutôt que de refuser un fichier valide.
                     var gotFlac = stream.MimeType?.Contains("flac", StringComparison.OrdinalIgnoreCase) ?? true;
@@ -1271,7 +1210,6 @@ public class DownloadService
 
                     if (attempt < attemptsPerQuality)
                     {
-                        // Silent retry — short backoff, no log noise
                         await Task.Delay(TimeSpan.FromSeconds(attempt), ct);
                     }
                 }
@@ -1299,28 +1237,23 @@ public class DownloadService
 
         if (!downloaded)
         {
-            // Un extrait à chaque qualité, MP3 320 inclus : ce n'est pas la piste qui manque, c'est
-            // le compte qui n'a aucun droit de streaming. Les éléments suivants de la file
-            // échoueraient exactement de la même façon — autant le dire une fois et s'arrêter.
+            // Un extrait à chaque qualité, MP3 320 compris : le compte n'a aucun droit de streaming, et
+            // toute la file échouerait de la même façon.
             if (sampleOnlyQualities > 0 && sampleOnlyQualities == triedQualities)
                 throw new SubscriptionRequiredException(l["log.subscriptionRequired"]);
 
             throw lastError ?? new IOException("Téléchargement impossible (toutes qualités échouées)");
         }
 
-        // La qualité servie n'est pas celle demandée : aligner le nom du fichier sur son contenu,
-        // plutôt que de livrer un MP3 sous une extension .flac — que la plupart des lecteurs et des
-        // étiqueteurs refusent. Seule l'extension est corrigée : les variables %TrackFormat% du
-        // modèle de nom, elles, sont résolues avant le téléchargement et annoncent donc encore la
-        // qualité demandée. Les aligner supposerait de renommer aussi le dossier de l'album, créé
-        // avant la première piste.
+        // Qualité servie différente de la demandée : corriger l'extension pour ne pas livrer un MP3 en
+        // .flac. Les variables %TrackFormat% du modèle, résolues avant le téléchargement, annoncent
+        // encore la qualité demandée : les aligner obligerait à renommer le dossier déjà créé.
         if (!filePath.EndsWith(fileExtension, StringComparison.OrdinalIgnoreCase))
         {
             filePath = Path.ChangeExtension(filePath, fileExtension);
 
-            // Le test d'existence du début portait sur l'extension demandée. Le refaire ici : sinon
-            // un second passage sur un album où cette piste retombe toujours en MP3 ferait échouer
-            // le déplacement final sur un fichier déjà présent.
+            // Le test d'existence du début portait sur l'extension demandée : le refaire, sinon le
+            // déplacement final échouerait sur un fichier déjà présent.
             if (s.DuplicateFileMode == "skip" && System.IO.File.Exists(filePath))
             {
                 try { System.IO.File.Delete(tempFile); } catch { }
@@ -1329,7 +1262,6 @@ public class DownloadService
             }
         }
 
-        // Fix MD5 for FLAC
         if (s.FixMD5s && fileExtension.Contains("flac", StringComparison.OrdinalIgnoreCase))
         {
             try
@@ -1343,11 +1275,9 @@ public class DownloadService
             catch (Exception ex) { _logger.LogWarning("flac MD5 fix failed: {Error}", ex.Message); }
         }
 
-        // Tag file
         var embeddedArtPath = EmbeddedArtPath(run);
         _tagging.WriteToFile(tempFile, System.IO.File.Exists(embeddedArtPath) ? embeddedArtPath : null, album, track, s);
 
-        // Move to final location
         var dir = Path.GetDirectoryName(filePath);
         if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
 
@@ -1370,15 +1300,9 @@ public class DownloadService
 
     // ─── HTTP stream download helpers ───
 
-    /// <summary>
-    /// Returns the chain of (format_id, label) to try for downloading a track.
-    /// Starts with the user's chosen quality, then falls back to lower qualities
-    /// if Qobuz refuses or throttles the high-res stream.
-    /// </summary>
+    /// <summary>Qualité demandée, puis les inférieures si Qobuz refuse ou bride le flux.</summary>
     private static IEnumerable<(string format, string label)> BuildQualityFallbackChain(string requested)
     {
-        // Quality order from highest to lowest:
-        //  27 = FLAC 24bit 192kHz, 7 = FLAC 24bit 96kHz, 6 = FLAC 16bit 44.1kHz, 5 = MP3 320
         var allQualities = new (string format, string label)[]
         {
             ("27", "FLAC 24bit/192kHz"),
@@ -1387,14 +1311,13 @@ public class DownloadService
             ("5",  "MP3 320"),
         };
 
-        // Find requested quality, then yield it followed by lower ones
         bool foundRequested = false;
         foreach (var q in allQualities)
         {
             if (q.format == requested) foundRequested = true;
             if (foundRequested) yield return q;
         }
-        // If the requested quality wasn't in our list (e.g. unknown id), just try it raw
+
         if (!foundRequested)
         {
             yield return (requested, $"format {requested}");
@@ -1402,10 +1325,7 @@ public class DownloadService
         }
     }
 
-    /// <summary>
-    /// Downloads a signed Qobuz stream URL to a local temp file in one shot.
-    /// Throws on any failure (caller handles fallback to a lower quality).
-    /// </summary>
+    /// <summary>Télécharge l'URL signée d'un trait ; lève à tout échec, l'appelant gère le repli.</summary>
     private async Task DownloadStreamToFileAsync(ItemRun run, string url, string tempFile)
     {
         var ct = run.Ct;
@@ -1469,7 +1389,6 @@ public class DownloadService
 
         try
         {
-            // Cover.jpg to disk
             if (!s.DontSaveArtworkToDisk)
             {
                 var coverPath = Path.Combine(downloadPath, "Cover.jpg");
@@ -1482,7 +1401,6 @@ public class DownloadService
                 }
             }
 
-            // Embedded artwork to temp
             var embeddedPath = EmbeddedArtPath(run);
             if (!System.IO.File.Exists(embeddedPath))
             {

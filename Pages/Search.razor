@@ -6,149 +6,164 @@
 @inject SearchStateStore States
 @inject AppGuardService Guard
 @inject NavigationManager Nav
+@inject AmbianceService Ambiance
 @inherits LocalizedComponentBase
 
 <h3 style="margin-bottom:16px;">@Loc["search.title"]</h3>
 
-<div class="card">
-    <div class="url-bar">
-        <input type="text" @bind="State.Query" @bind:event="oninput" placeholder='@Loc["search.placeholder"]' @onkeydown="OnKeyDown" />
-        <button class="btn btn-primary" @onclick='() => DoSearch("albums")' disabled="@_searching">@Loc["search.albums"]</button>
-        <button class="btn btn-secondary" @onclick='() => DoSearch("tracks")' disabled="@_searching">@Loc["search.tracks"]</button>
-        <button class="btn btn-secondary" @onclick='() => DoSearch("artists")' disabled="@_searching">@Loc["search.artists"]</button>
-    </div>
+@* Les onglets lancent la recherche du type choisi ; Entrée relance la dernière. *@
+<div class="search-field">
+    <NavIcon Name="search" />
+    <input type="text" inputmode="search" enterkeyhint="search" autocomplete="off"
+           aria-label='@Loc["search.placeholder"]' placeholder='@Loc["search.placeholder"]'
+           @bind="State.Query" @bind:event="oninput" @onkeydown="OnKeyDown" />
+</div>
+
+<div class="search-tabs" role="tablist" aria-label='@Loc["search.title"]'>
+    @foreach (var (type, key) in SearchTypes)
+    {
+        var active = State.LastSearchType == type;
+        <button type="button" role="tab" class="search-tab @(active ? "on" : "")" aria-selected="@(active ? "true" : "false")"
+                disabled="@_searching" @onclick="() => DoSearch(type)">@Loc[key]</button>
+    }
 </div>
 
 @if (_searching)
 {
-    <div class="card" style="text-align:center;color:var(--text-secondary);">@Loc["search.searching"]</div>
+    <p class="search-status" role="status">@Loc["search.searching"]</p>
 }
 
-@if (State.Albums != null && State.Albums.Count > 0)
+@if (State.Albums is { Count: > 0 } albums)
 {
-    <div class="card">
-        <div class="card-title">
-            @Loc["search.albums"] (@Loc.P("search.results", State.Albums.Count))
-            <button class="btn btn-link btn-sm select-all-btn" @onclick="ToggleSelectAllAlbums">@(_selectedAlbums.Count == State.Albums.Count ? Loc["search.deselectAll"] : Loc["search.selectAll"])</button>
-            <select class="sort-select" @bind="State.AlbumSort">
-                <option value="@SearchSort.Relevance">@Loc["sort.relevance"]</option>
-                <option value="@SearchSort.TitleAsc">@Loc["sort.titleAsc"]</option>
-                <option value="@SearchSort.TitleDesc">@Loc["sort.titleDesc"]</option>
-                <option value="@SearchSort.ArtistAsc">@Loc["sort.artistAsc"]</option>
-                <option value="@SearchSort.ArtistDesc">@Loc["sort.artistDesc"]</option>
-                <option value="@SearchSort.DateDesc">@Loc["sort.dateDesc"]</option>
-                <option value="@SearchSort.DateAsc">@Loc["sort.dateAsc"]</option>
-                <option value="@SearchSort.QualityDesc">@Loc["sort.qualityDesc"]</option>
-                <option value="@SearchSort.CountDesc">@Loc["sort.tracksDesc"]</option>
-                <option value="@SearchSort.CountAsc">@Loc["sort.tracksAsc"]</option>
-                <option value="@SearchSort.LabelAsc">@Loc["sort.labelAsc"]</option>
-            </select>
+    <section class="results" aria-label='@Loc["search.albums"]'>
+        <div class="results-head">
+            <span class="results-count">@Loc.P("search.results", albums.Count)</span>
+            <span class="results-tools">
+                <select class="sort-select" aria-label='@Loc["search.sort"]' @bind="State.AlbumSort">
+                    <option value="@SearchSort.Relevance">@Loc["sort.relevance"]</option>
+                    <option value="@SearchSort.TitleAsc">@Loc["sort.titleAsc"]</option>
+                    <option value="@SearchSort.TitleDesc">@Loc["sort.titleDesc"]</option>
+                    <option value="@SearchSort.ArtistAsc">@Loc["sort.artistAsc"]</option>
+                    <option value="@SearchSort.ArtistDesc">@Loc["sort.artistDesc"]</option>
+                    <option value="@SearchSort.DateDesc">@Loc["sort.dateDesc"]</option>
+                    <option value="@SearchSort.DateAsc">@Loc["sort.dateAsc"]</option>
+                    <option value="@SearchSort.QualityDesc">@Loc["sort.qualityDesc"]</option>
+                    <option value="@SearchSort.CountDesc">@Loc["sort.tracksDesc"]</option>
+                    <option value="@SearchSort.CountAsc">@Loc["sort.tracksAsc"]</option>
+                    <option value="@SearchSort.LabelAsc">@Loc["sort.labelAsc"]</option>
+                </select>
+                <button type="button" class="btn btn-secondary btn-sm" @onclick="ToggleSelectAllAlbums">@(_selectedAlbums.Count == albums.Count ? Loc["search.deselectAll"] : Loc["search.selectAll"])</button>
+            </span>
         </div>
-        <div class="search-results">
-            @foreach (var album in SearchSorter.SortAlbums(State.Albums, State.AlbumSort))
+        <div class="alb-grid">
+            @foreach (var album in SearchSorter.SortAlbums(albums, State.AlbumSort))
             {
-                var albumId = album.Id;
-                var albumUrl = AlbumUrl(albumId);
-                <div class="search-result-row @(_selectedAlbums.Contains(albumId) ? "selected" : "")">
-                    <input type="checkbox" class="select-checkbox" checked="@_selectedAlbums.Contains(albumId)" @onchange="() => ToggleAlbum(albumId)" />
-                    <img src="@album.Image?.Thumbnail" alt="" />
-                    <div class="search-result-info">
-                        <div class="title">@album.Title @(album.Version != null ? $"({album.Version})" : "")</div>
-                        <div class="artist">@album.Artist?.Name &middot; @album.ReleaseDateOriginal &middot; @Loc.P("search.trackCount", album.TracksCount) &middot; @(album.MaximumBitDepth)bit/@(album.MaximumSamplingRate)kHz</div>
-                    </div>
-                    @* La marque ✓ est FRÈRE du bouton, jamais enfant : à l'intérieur, la règle
-                       `.search-result-row .btn::before` du palier 640px l'écraserait. *@
-                    @if (Download.IsDone(Guard.UserId,albumUrl))
-                    {
-                        <span class="queue-done-mark" title='@Loc["queue.doneMark"]'>&#10003;</span>
-                    }
-                    <button class="btn btn-primary btn-sm" @onclick="() => QueueAlbum(album)" disabled="@Download.IsQueued(Guard.UserId,albumUrl)" title='@Loc["search.download"]'><span class="btn-label">@Loc["search.download"]</span></button>
-                </div>
+                @(AlbumTile(album, withArtist: true))
             }
         </div>
-    </div>
+    </section>
 }
 
-@if (State.Tracks != null && State.Tracks.Count > 0)
+@if (State.Tracks is { Count: > 0 } tracks)
 {
-    <div class="card">
-        <div class="card-title">
-            @Loc["search.tracks"] (@Loc.P("search.results", State.Tracks.Count))
-            <button class="btn btn-link btn-sm select-all-btn" @onclick="ToggleSelectAllTracks">@(_selectedTracks.Count == State.Tracks.Count ? Loc["search.deselectAll"] : Loc["search.selectAll"])</button>
-            <select class="sort-select" @bind="State.TrackSort">
-                <option value="@SearchSort.Relevance">@Loc["sort.relevance"]</option>
-                <option value="@SearchSort.TitleAsc">@Loc["sort.titleAsc"]</option>
-                <option value="@SearchSort.TitleDesc">@Loc["sort.titleDesc"]</option>
-                <option value="@SearchSort.ArtistAsc">@Loc["sort.artistAsc"]</option>
-                <option value="@SearchSort.AlbumAsc">@Loc["sort.albumAsc"]</option>
-                <option value="@SearchSort.DurationAsc">@Loc["sort.durationAsc"]</option>
-                <option value="@SearchSort.DurationDesc">@Loc["sort.durationDesc"]</option>
-                <option value="@SearchSort.QualityDesc">@Loc["sort.qualityDesc"]</option>
-                <option value="@SearchSort.DateDesc">@Loc["sort.dateDesc"]</option>
-            </select>
+    <section class="results" aria-label='@Loc["search.tracks"]'>
+        <div class="results-head">
+            <span class="results-count">@Loc.P("search.results", tracks.Count)</span>
+            <span class="results-tools">
+                <select class="sort-select" aria-label='@Loc["search.sort"]' @bind="State.TrackSort">
+                    <option value="@SearchSort.Relevance">@Loc["sort.relevance"]</option>
+                    <option value="@SearchSort.TitleAsc">@Loc["sort.titleAsc"]</option>
+                    <option value="@SearchSort.TitleDesc">@Loc["sort.titleDesc"]</option>
+                    <option value="@SearchSort.ArtistAsc">@Loc["sort.artistAsc"]</option>
+                    <option value="@SearchSort.AlbumAsc">@Loc["sort.albumAsc"]</option>
+                    <option value="@SearchSort.DurationAsc">@Loc["sort.durationAsc"]</option>
+                    <option value="@SearchSort.DurationDesc">@Loc["sort.durationDesc"]</option>
+                    <option value="@SearchSort.QualityDesc">@Loc["sort.qualityDesc"]</option>
+                    <option value="@SearchSort.DateDesc">@Loc["sort.dateDesc"]</option>
+                </select>
+                <button type="button" class="btn btn-secondary btn-sm" @onclick="ToggleSelectAllTracks">@(_selectedTracks.Count == tracks.Count ? Loc["search.deselectAll"] : Loc["search.selectAll"])</button>
+            </span>
         </div>
-        <div class="search-results">
-            @foreach (var track in SearchSorter.SortTracks(State.Tracks, State.TrackSort))
+        <div class="row-list">
+            @foreach (var track in SearchSorter.SortTracks(tracks, State.TrackSort))
             {
                 var trackId = track.Id;
                 var trackUrl = TrackUrl(trackId);
-                <div class="search-result-row @(_selectedTracks.Contains(trackId) ? "selected" : "")">
-                    <input type="checkbox" class="select-checkbox" checked="@_selectedTracks.Contains(trackId)" @onchange="() => ToggleTrack(trackId)" />
-                    <img src="@track.Album?.Image?.Thumbnail" alt="" />
-                    <div class="search-result-info">
-                        <div class="title">@track.Title @(track.Version != null ? $"({track.Version})" : "")</div>
-                        <div class="artist">@track.Performer?.Name &middot; @track.Album?.Title &middot; @(track.MaximumBitDepth)bit/@(track.MaximumSamplingRate)kHz</div>
+                var selected = _selectedTracks.Contains(trackId);
+                var queued = Download.IsQueued(_me, trackUrl);
+                var title = track.Title + (track.Version != null ? $" ({track.Version})" : "");
+                <div class="r @(selected ? "is-sel-row" : "")" @key="trackId">
+                    @(Cover(track.Album?.Image, 48))
+                    <div class="r-text">
+                        <div class="rt" title="@title">@title</div>
+                        <div class="rm">@track.Performer?.Name &middot; @track.Album?.Title</div>
+                        <div class="r-format">
+                            @(track.MaximumBitDepth)bit/@(track.MaximumSamplingRate)kHz
+                            @if (Download.IsDone(_me, trackUrl))
+                            {
+                                <span class="r-etat">&middot; @Loc["queue.doneMark"]</span>
+                            }
+                        </div>
                     </div>
-                    @if (Download.IsDone(Guard.UserId,trackUrl))
-                    {
-                        <span class="queue-done-mark" title='@Loc["queue.doneMark"]'>&#10003;</span>
-                    }
-                    <button class="btn btn-primary btn-sm" @onclick="() => QueueTrack(track)" disabled="@Download.IsQueued(Guard.UserId,trackUrl)" title='@Loc["search.download"]'><span class="btn-label">@Loc["search.download"]</span></button>
+                    <div class="alb @(selected ? "is-sel" : "") @(queued ? "is-file" : "")">
+                        @(Capsule(title, selected, queued, () => ToggleTrack(trackId), () => QueueTrack(track), compact: true))
+                    </div>
                 </div>
             }
         </div>
-    </div>
+    </section>
 }
 
-@if (State.Artists != null && State.Artists.Count > 0)
+@if (State.Artists is { Count: > 0 } artists)
 {
-    <div class="card">
-        <div class="card-title">
-            @Loc["search.artists"] (@Loc.P("search.results", State.Artists.Count))
-            <select class="sort-select" @bind="State.ArtistSort">
-                <option value="@SearchSort.Relevance">@Loc["sort.relevance"]</option>
-                <option value="@SearchSort.TitleAsc">@Loc["sort.nameAsc"]</option>
-                <option value="@SearchSort.TitleDesc">@Loc["sort.nameDesc"]</option>
-                <option value="@SearchSort.CountDesc">@Loc["sort.albumsDesc"]</option>
-                <option value="@SearchSort.CountAsc">@Loc["sort.albumsAsc"]</option>
-            </select>
+    <section class="results" aria-label='@Loc["search.artists"]'>
+        <div class="results-head">
+            <span class="results-count">@Loc.P("search.results", artists.Count)</span>
+            <span class="results-tools">
+                <select class="sort-select" aria-label='@Loc["search.sort"]' @bind="State.ArtistSort">
+                    <option value="@SearchSort.Relevance">@Loc["sort.relevance"]</option>
+                    <option value="@SearchSort.TitleAsc">@Loc["sort.nameAsc"]</option>
+                    <option value="@SearchSort.TitleDesc">@Loc["sort.nameDesc"]</option>
+                    <option value="@SearchSort.CountDesc">@Loc["sort.albumsDesc"]</option>
+                    <option value="@SearchSort.CountAsc">@Loc["sort.albumsAsc"]</option>
+                </select>
+            </span>
         </div>
-        <div class="search-results">
-            @foreach (var artist in SearchSorter.SortArtists(State.Artists, State.ArtistSort))
+        <div class="row-list">
+            @foreach (var artist in SearchSorter.SortArtists(artists, State.ArtistSort))
             {
                 var artistId = artist.Id;
                 var artistUrl = ArtistUrl(artistId);
                 var isExpanded = State.ExpandedArtistId == artistId;
-                <div class="artist-block">
-                    <div class="search-result-row artist-row @(isExpanded ? "expanded" : "")" @onclick="() => ToggleArtist(artistId)">
-                        @if (!string.IsNullOrEmpty(artist.Picture))
-                        {
-                            <img src="@artist.Picture" alt="" class="artist-avatar" />
-                        }
-                        else
-                        {
-                            <div class="artist-avatar-placeholder">@(artist.Name?.Length > 0 ? artist.Name[0].ToString().ToUpper() : "?")</div>
-                        }
-                        <div class="search-result-info">
-                            <div class="title">@artist.Name</div>
-                            <div class="artist">@Loc.P("search.albumCount", artist.AlbumsCount)</div>
-                        </div>
-                        <span class="expand-icon">@(isExpanded ? "▾" : "▸")</span>
-                        @if (Download.IsDone(Guard.UserId,artistUrl))
-                        {
-                            <span class="queue-done-mark" title='@Loc["queue.doneMark"]'>&#10003;</span>
-                        }
-                        <button class="btn btn-primary btn-sm" @onclick="() => QueueArtist(artist)" @onclick:stopPropagation="true" disabled="@Download.IsQueued(Guard.UserId,artistUrl)" title='@Loc["search.downloadAll"]'><span class="btn-label">@Loc["search.downloadAll"]</span></button>
+                var queued = Download.IsQueued(_me, artistUrl);
+                <div class="artist-block @(isExpanded ? "expanded" : "")" @key="artistId">
+                    <div class="r artist-row">
+                        @* Un vrai bouton pour déplier : atteignable au clavier, état annoncé. *@
+                        <button type="button" class="artist-toggle" aria-expanded="@(isExpanded ? "true" : "false")" @onclick="() => ToggleArtist(artistId)">
+                            @if (!string.IsNullOrEmpty(artist.Picture))
+                            {
+                                <img src="@artist.Picture" alt="" class="artist-avatar" width="48" height="48" loading="lazy" decoding="async" />
+                            }
+                            else
+                            {
+                                <span class="artist-avatar artist-avatar-placeholder" aria-hidden="true">@(artist.Name?.Length > 0 ? artist.Name[0].ToString().ToUpper() : "?")</span>
+                            }
+                            <span class="r-text">
+                                <span class="rt">@artist.Name</span>
+                                <span class="rm">
+                                    @Loc.P("search.albumCount", artist.AlbumsCount)
+                                    @if (Download.IsDone(_me, artistUrl))
+                                    {
+                                        <span class="r-etat">&middot; @Loc["queue.doneMark"]</span>
+                                    }
+                                </span>
+                            </span>
+                            <span class="expand-icon" aria-hidden="true"><NavIcon Name="chevron" /></span>
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm artist-dl" disabled="@queued" @onclick="() => QueueArtist(artist)"
+                                aria-label='@Loc.T("search.itemAction", queued ? Loc["search.inQueue"] : Loc["search.downloadAll"], artist.Name)'>
+                            <NavIcon Name="download" /><span class="btn-label">@(queued ? Loc["search.inQueue"] : Loc["search.downloadAll"])</span>
+                        </button>
                     </div>
 
                     @if (isExpanded)
@@ -156,60 +171,53 @@
                         <div class="artist-albums">
                             @if (_loadingArtistAlbums)
                             {
-                                <div class="artist-albums-loading">@Loc["search.loadingAlbums"]</div>
+                                <p class="search-status" role="status">@Loc["search.loadingAlbums"]</p>
                             }
-                            else if (State.ArtistAlbums != null && State.ArtistAlbums.Count > 0)
+                            else if (State.ArtistAlbums is { Count: > 0 } artistAlbums)
                             {
-                                <div class="artist-albums-toolbar">
-                                    <select class="sort-select" @bind="State.ArtistAlbumSort">
-                                        <option value="@SearchSort.Relevance">@Loc["sort.relevance"]</option>
-                                        <option value="@SearchSort.DateAsc">@Loc["sort.dateAsc"]</option>
-                                        <option value="@SearchSort.DateDesc">@Loc["sort.dateDesc"]</option>
-                                        <option value="@SearchSort.TitleAsc">@Loc["sort.titleAsc"]</option>
-                                        <option value="@SearchSort.TitleDesc">@Loc["sort.titleDesc"]</option>
-                                        <option value="@SearchSort.QualityDesc">@Loc["sort.qualityDesc"]</option>
-                                        <option value="@SearchSort.CountDesc">@Loc["sort.tracksDesc"]</option>
-                                        <option value="@SearchSort.CountAsc">@Loc["sort.tracksAsc"]</option>
-                                        <option value="@SearchSort.LabelAsc">@Loc["sort.labelAsc"]</option>
-                                    </select>
+                                <div class="results-head">
+                                    <span class="results-count">@Loc.P("search.albumCount", artistAlbums.Count)</span>
+                                    <span class="results-tools">
+                                        <select class="sort-select" aria-label='@Loc["search.sort"]' @bind="State.ArtistAlbumSort">
+                                            <option value="@SearchSort.Relevance">@Loc["sort.relevance"]</option>
+                                            <option value="@SearchSort.DateAsc">@Loc["sort.dateAsc"]</option>
+                                            <option value="@SearchSort.DateDesc">@Loc["sort.dateDesc"]</option>
+                                            <option value="@SearchSort.TitleAsc">@Loc["sort.titleAsc"]</option>
+                                            <option value="@SearchSort.TitleDesc">@Loc["sort.titleDesc"]</option>
+                                            <option value="@SearchSort.QualityDesc">@Loc["sort.qualityDesc"]</option>
+                                            <option value="@SearchSort.CountDesc">@Loc["sort.tracksDesc"]</option>
+                                            <option value="@SearchSort.CountAsc">@Loc["sort.tracksAsc"]</option>
+                                            <option value="@SearchSort.LabelAsc">@Loc["sort.labelAsc"]</option>
+                                        </select>
+                                    </span>
                                 </div>
-                                @foreach (var album in SearchSorter.SortAlbums(State.ArtistAlbums, State.ArtistAlbumSort))
-                                {
-                                    var aId = album.Id;
-                                    var aUrl = AlbumUrl(aId);
-                                    <div class="search-result-row artist-album-row @(_selectedAlbums.Contains(aId) ? "selected" : "")">
-                                        <input type="checkbox" class="select-checkbox" checked="@_selectedAlbums.Contains(aId)" @onchange="() => ToggleAlbum(aId)" />
-                                        <img src="@album.Image?.Thumbnail" alt="" />
-                                        <div class="search-result-info">
-                                            <div class="title">@album.Title @(album.Version != null ? $"({album.Version})" : "")</div>
-                                            <div class="artist">@album.ReleaseDateOriginal &middot; @Loc.P("search.trackCount", album.TracksCount) &middot; @(album.MaximumBitDepth)bit/@(album.MaximumSamplingRate)kHz</div>
-                                        </div>
-                                        @if (Download.IsDone(Guard.UserId,aUrl))
-                                        {
-                                            <span class="queue-done-mark" title='@Loc["queue.doneMark"]'>&#10003;</span>
-                                        }
-                                        <button class="btn btn-primary btn-sm" @onclick="() => QueueAlbum(album)" disabled="@Download.IsQueued(Guard.UserId,aUrl)" title='@Loc["search.download"]'><span class="btn-label">@Loc["search.download"]</span></button>
-                                    </div>
-                                }
+                                <div class="alb-grid">
+                                    @foreach (var album in SearchSorter.SortAlbums(artistAlbums, State.ArtistAlbumSort))
+                                    {
+                                        @(AlbumTile(album, withArtist: false))
+                                    }
+                                </div>
                             }
                             else
                             {
-                                <div class="artist-albums-loading">@Loc["search.noAlbums"]</div>
+                                <p class="search-status">@Loc["search.noAlbums"]</p>
                             }
                         </div>
                     }
                 </div>
             }
         </div>
-    </div>
+    </section>
 }
 
+@* Barre de sélection collante : la page réserve sa hauteur en bas (app.css), elle ne masque donc
+   jamais la dernière rangée. *@
 @if (TotalSelected > 0)
 {
-    <div class="selection-bar">
+    <div class="selection-bar" role="region" aria-label='@Loc["search.selectionBar"]'>
         <span>@Loc.P("search.selected", TotalSelected)</span>
-        <button class="btn btn-primary btn-sm" @onclick="DownloadSelected">@Loc["search.downloadSelection"]</button>
-        <button class="btn btn-secondary btn-sm" @onclick="ClearSelection">@Loc["search.clearSelection"]</button>
+        <button type="button" class="btn btn-secondary btn-sm" @onclick="ClearSelection">@Loc["search.clearSelection"]</button>
+        <button type="button" class="btn btn-primary btn-sm" @onclick="DownloadSelected">@Loc["search.downloadSelection"]</button>
     </div>
 }
 
@@ -217,7 +225,7 @@
    réutiliserait le même <div> pour un second toast et celui-ci apparaîtrait déjà effacé. *@
 @if (_toast != null)
 {
-    <div class="toast-notification @(_toastIsError ? "error" : "")" @key="_toastSeq">@_toast</div>
+    <div class="toast-notification @(_toastIsError ? "error" : "")" role="status" @key="_toastSeq">@_toast</div>
 }
 
 @code {
@@ -238,19 +246,125 @@
     // Capturé une fois : OnQueueChanged arrive depuis les workers, hors du circuit.
     private string _me = "";
 
-    // Cette page est désormais la page d'accueil ("/"), elle doit donc porter le garde de session
-    // qui vivait jusqu'ici uniquement sur le téléchargeur.
+    // Page d'accueil ("/") : c'est elle qui porte le garde de session.
     protected override void OnInitialized()
     {
         base.OnInitialized();
         _me = Guard.UserId;
         if (!Api.IsLoggedIn) { Nav.NavigateTo("/login"); return; }
 
-        // OnQueueChanged uniquement : sans cet abonnement, ni le grisage ni la marque ✓ ne se
-        // rafraîchiraient quand un élément se termine. S'abonner en plus à OnProgressChanged
-        // redessinerait cette page à chaque bloc téléchargé, pour rien.
+        // OnQueueChanged uniquement : sans cet abonnement, ni l'état « dans la file » ni la mention
+        // « déjà téléchargé » ne se rafraîchiraient quand un élément se termine. S'abonner en plus
+        // à OnProgressChanged redessinerait cette page à chaque bloc téléchargé, pour rien.
         Download.OnQueueChanged += OnQueueChanged;
+
+        // La recherche précédente est restituée : son mur de pochettes aussi.
+        UpdateAmbiance();
     }
+
+    // Mur du fond : les pochettes de ce qui est affiché. Les miniatures suffisent, le mur étant
+    // flouté et passé en gris.
+    private void UpdateAmbiance()
+    {
+        IEnumerable<string?> covers =
+            State.Albums?.Select(a => (string?)a.Image?.Thumbnail)
+            ?? State.Tracks?.Select(t => (string?)t.Album?.Image?.Thumbnail)
+            ?? (State.ArtistAlbums ?? new()).Select(a => (string?)a.Image?.Thumbnail)
+                .Concat((State.Artists ?? new()).Select(a => a.Picture));
+        Ambiance.SetCovers(this, covers);
+    }
+
+    private static readonly (string Type, string Key)[] SearchTypes =
+    {
+        ("albums", "search.albums"),
+        ("tracks", "search.tracks"),
+        ("artists", "search.artists"),
+    };
+
+    // ─── Modèles de rendu ───
+    // Carte d'album : pochette nue, méta, puis la capsule C1 « choisir | télécharger ». Rien n'est
+    // posé sur l'image.
+    private RenderFragment AlbumTile(QobuzAlbum album, bool withArtist)
+    {
+        var id = album.Id;
+        var url = AlbumUrl(id);
+        var selected = _selectedAlbums.Contains(id);
+        var queued = Download.IsQueued(_me, url);
+        var done = Download.IsDone(_me, url);
+        var title = album.Title + (album.Version != null ? $" ({album.Version})" : "");
+        var img = album.Image;
+
+        return @<article class="alb @(selected ? "is-sel" : "") @(queued ? "is-file" : "")">
+            <div class="alb-cov">
+                @if (img != null && !string.IsNullOrEmpty(img.Small))
+                {
+                    @* Dimensions fixées et carré réservé par le CSS (aspect-ratio) : la grille ne
+                       saute pas pendant le chargement. *@
+                    <img src="@img.Small" srcset="@AlbumSrcSet(img)" sizes="(max-width: 768px) 46vw, 220px"
+                         width="230" height="230" alt="" loading="lazy" decoding="async" />
+                }
+            </div>
+            <div class="alb-meta">
+                <div class="alb-titre" title="@title">@title</div>
+                @if (withArtist)
+                {
+                    <div class="alb-sous">@album.Artist?.Name</div>
+                }
+                <div class="alb-sous">@album.ReleaseDateOriginal &middot; @Loc.P("search.trackCount", album.TracksCount)</div>
+                <div class="alb-format">
+                    @(album.MaximumBitDepth)bit/@(album.MaximumSamplingRate)kHz
+                    @if (done)
+                    {
+                        <span class="r-etat">&middot; @Loc["queue.doneMark"]</span>
+                    }
+                </div>
+            </div>
+            @(Capsule(title, selected, queued, () => ToggleAlbum(id), () => QueueAlbum(album)))
+        </article>;
+    }
+
+    // Capsule C1 : deux moitiés de 44 px. L'état (choisi, déjà dans la file) est porté par le
+    // conteneur .alb. En ligne de liste (compact), la moitié Télécharger n'a que l'icône : son nom
+    // accessible reprend alors l'action et le titre.
+    private RenderFragment Capsule(string title, bool selected, bool queued, Action toggle, Action queue, bool compact = false)
+    {
+        var action = queued ? Loc["search.inQueue"] : Loc["search.download"];
+        return @<div class="alb-caps">
+            <button type="button" class="alb-caps-sel" aria-pressed="@(selected ? "true" : "false")"
+                    aria-label='@Loc.T("search.selectItem", title)' @onclick="toggle">
+                <i>
+                    @if (selected)
+                    {
+                        <NavIcon Name="check" />
+                    }
+                </i>
+            </button>
+            <button type="button" class="alb-caps-dl" disabled="@queued" @onclick="queue"
+                    aria-label='@Loc.T("search.itemAction", action, title)'>
+                <NavIcon Name="download" />
+                @if (!compact)
+                {
+                    <span>@action</span>
+                }
+            </button>
+        </div>;
+    }
+
+    // Vignette de liste : miniature, et la taille au-dessus pour les écrans denses.
+    private RenderFragment Cover(QobuzImage? image, int size) =>
+        @<span class="vg" style="width:@(size)px;height:@(size)px">
+            @if (image != null && !string.IsNullOrEmpty(image.Thumbnail))
+            {
+                <img src="@image.Thumbnail" srcset="@ThumbSrcSet(image)" sizes="@(size)px"
+                     width="@size" height="@size" alt="" loading="lazy" decoding="async" />
+            }
+        </span>;
+
+    private static string AlbumSrcSet(QobuzImage img) =>
+        string.IsNullOrEmpty(img.Large) ? $"{img.Small} 230w" : $"{img.Small} 230w, {img.Large} 600w";
+
+    private static string ThumbSrcSet(QobuzImage img) =>
+        string.IsNullOrEmpty(img.Small) ? $"{img.Thumbnail} 50w" : $"{img.Thumbnail} 50w, {img.Small} 230w";
 
     // Seule sa propre file grise ou coche les boutons : ignorer celles des autres.
     private void OnQueueChanged(string? ownerId)
@@ -262,6 +376,7 @@
     {
         base.Dispose();
         Download.OnQueueChanged -= OnQueueChanged;
+        Ambiance.Clear(this);
     }
 
     private async Task DoSearch(string type)
@@ -302,6 +417,7 @@
         finally
         {
             _searching = false;
+            UpdateAmbiance();
         }
     }
 
@@ -311,6 +427,7 @@
         {
             State.ExpandedArtistId = 0;
             State.ArtistAlbums = null;
+            UpdateAmbiance();
             return;
         }
 
@@ -331,15 +448,13 @@
         finally
         {
             _loadingArtistAlbums = false;
+            UpdateAmbiance();
         }
     }
 
     // ─── File d'attente ───
-    //
-    // Ces trois méthodes sont synchrones : Enqueue rend la main immédiatement, le worker du service
-    // draine en arrière-plan. C'est ce qui permet de continuer à chercher pendant un téléchargement,
-    // là où l'ancien `await ProcessUrlAsync` bloquait le gestionnaire de clic jusqu'au bout.
-    // La variable d'itération d'un foreach étant capturée par itération depuis C# 5,
+    // Méthodes synchrones : Enqueue rend la main et le worker draine en arrière-plan, on peut donc
+    // continuer à chercher. La variable d'un foreach étant capturée par itération (C# 5),
     // `@onclick="() => QueueAlbum(album)"` désigne bien l'album de la ligne.
 
     private static string AlbumUrl(string id) => $"https://play.qobuz.com/album/{id}";

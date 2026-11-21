@@ -3,8 +3,7 @@
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @using QBDL.Web.Services
 @inject LocalizationService Loc
-@* La langue est résolue par le middleware de localisation (Program.cs) avant que cette page ne
-   soit rendue — compte connecté, puis cookie, puis navigateur : la vue n'a plus qu'à la lire. *@
+@* La langue est résolue par le middleware (Program.cs) avant le rendu : la vue n'a qu'à la lire. *@
 
 <!DOCTYPE html>
 <html lang="@Loc.Current">
@@ -13,7 +12,7 @@
     @* viewport-fit=cover : sans lui, env(safe-area-inset-*) vaut zéro sur les écrans à encoche.
        Le zoom utilisateur reste autorisé (pas de maximum-scale) pour l'accessibilité. *@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#16213e" />
+    <meta name="theme-color" content="#08090E" />
     <meta name="color-scheme" content="dark" />
     <title>@Loc["app.title"]</title>
     <base href="~/" />
@@ -21,21 +20,26 @@
     @* iOS ignore le manifeste : le mode plein écran et l'icône de l'écran d'accueil passent par
        les meta apple-*, d'où la duplication apparente avec site.webmanifest. *@
     <link rel="icon" href="favicon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="icon-192.png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <link rel="manifest" href="site.webmanifest" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="QBDL" />
 
+    @* Polices auto-hébergées (wwwroot/fonts, licence OFL) : aucune requête vers un service tiers.
+       Seuls les sous-ensembles latins de base sont préchargés ; latin-ext ne se télécharge que si
+       un texte en a besoin (unicode-range). *@
+    <link rel="preload" href="fonts/space-grotesk-latin-wght.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="css/app.css" />
 </head>
 <body>
     <component type="typeof(App)" render-mode="ServerPrerendered" />
 
-    @* Blazor bascule lui-même les classes components-reconnect-* sur cet élément. Sans cet
-       élément dans le document, il injecte son propre bandeau, gris clair et illisible sur le
-       thème sombre. *@
-    <div id="components-reconnect-modal" class="reconnect-overlay">
+    @* Blazor bascule lui-même les classes components-reconnect-* sur cet élément ; sans lui, il
+       injecte son propre bandeau, illisible sur le thème sombre. Présenté en bandeau discret
+       (app.css). L'identifiant, les classes d'état et les textes ne changent pas : le script de
+       reprise plus bas (window.qbdlxResume) en dépend. *@
+    <div id="components-reconnect-modal" class="reconnect-overlay" role="status" aria-live="polite">
         <div class="reconnect-card">
             <div class="reconnect-spinner" aria-hidden="true"></div>
             <p data-state="show">
@@ -44,7 +48,7 @@
             </p>
             <p data-state="failed">@Loc["reconnect.failed"]</p>
             <p data-state="rejected">@Loc["reconnect.rejected"]</p>
-            <button type="button" class="btn btn-primary reconnect-reload" onclick="location.reload()">@Loc["reconnect.reload"]</button>
+            <button type="button" class="reconnect-reload" onclick="location.reload()">@Loc["reconnect.reload"]</button>
         </div>
     </div>
 
@@ -135,9 +139,8 @@
             return Promise.resolve();
         };
 
-        // Journal de téléchargement : avec une file qui enchaîne les éléments, les nouvelles lignes
-        // sortent sans arrêt du cadre visible. Le garde-fou sur l'élément évite une exception si le
-        // rendu a retiré le nœud entre-temps.
+        // Journal de téléchargement : suivre les nouvelles lignes. Le garde-fou évite une exception si
+        // le rendu a retiré le nœud entre-temps.
         window.scrollToBottom = function (el) {
             if (el) el.scrollTop = el.scrollHeight;
         };

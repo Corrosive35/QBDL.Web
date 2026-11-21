@@ -1,17 +1,19 @@
 @inject LocalizationService Loc
 @inject NavigationManager Nav
 
-@* Bascule FR | EN. Un vrai formulaire, et non un gestionnaire Blazor : la langue est fixée par
-   requête (middleware de localisation), et un circuit garde la culture de la connexion qui l'a
-   ouvert — seul un rechargement peut donc l'appliquer. Ce rechargement ne coûte rien : la connexion
-   vit dans un cookie, et la file comme la recherche dans des singletons. Fonctionne aussi au
-   prérendu, avant que le circuit ne soit établi. *@
+@* Bascule FR | EN par un vrai formulaire, et non un gestionnaire Blazor : la langue est fixée par
+   requête et un circuit garde la culture de sa connexion, seul un rechargement l'applique. Il ne
+   coûte rien (cookie de connexion, file et recherche en singletons) et fonctionne au prérendu. *@
 <form class="lang-switch" method="post" action="/culture">
     <input type="hidden" name="returnUrl" value="@ReturnUrl" />
-    <button type="submit" name="lang" value="@LocalizationService.French"
+    @* Les noms accessibles sont dans leur propre langue (lang) ; aria-pressed annonce la langue
+       en cours. *@
+    <button type="submit" name="lang" value="@LocalizationService.French" lang="fr" aria-label="Français"
+            aria-pressed="@(Loc.Current == LocalizationService.French ? "true" : "false")"
             class="@(Loc.Current == LocalizationService.French ? "active" : "")">FR</button>
-    <span class="lang-switch-sep">|</span>
-    <button type="submit" name="lang" value="@LocalizationService.English"
+    <span class="lang-switch-sep" aria-hidden="true">|</span>
+    <button type="submit" name="lang" value="@LocalizationService.English" lang="en" aria-label="English"
+            aria-pressed="@(Loc.Current == LocalizationService.English ? "true" : "false")"
             class="@(Loc.Current == LocalizationService.English ? "active" : "")">EN</button>
 </form>
 

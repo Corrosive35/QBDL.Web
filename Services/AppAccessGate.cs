@@ -4,14 +4,12 @@ using System.Text;
 namespace QBDL.Web.Services;
 
 /// <summary>
-/// Étranglement des tentatives de déverrouillage, au niveau de l'application.
-/// Le compteur vivait auparavant dans AppGuardService, un service scoped : il était donc remis à
-/// zéro par le simple fait d'ouvrir un nouvel onglet, ce qui rendait la limite décorative.
+/// Étranglement des tentatives de déverrouillage, au niveau de l'application : dans un service
+/// scoped, le compteur repartirait de zéro à chaque nouvel onglet.
 /// </summary>
 /// <remarks>
-/// Un seul seau, pas un seau par adresse : derrière un reverse proxy sans ForwardedHeaders, toutes
-/// les requêtes portent l'adresse du proxy. Découper par IP donnerait exactement le même
-/// comportement, avec l'illusion d'une granularité en plus.
+/// Un seul seau, pas un par adresse : derrière un reverse proxy sans ForwardedHeaders, toutes
+/// les requêtes portent l'adresse du proxy.
 /// </remarks>
 public sealed class AppAccessGate
 {
@@ -76,10 +74,9 @@ public sealed class AppAccessGate
     }
 
     /// <summary>
-    /// Empreinte du hachage d'un compte, embarquée dans le cookie puis revalidée à chaque requête.
-    /// Changer le mot de passe d'un compte change l'empreinte, ce qui invalide d'un coup les cookies
-    /// émis pour l'ancien sur tous les appareils de ce compte — sans quoi un appareil connecté le
-    /// resterait indéfiniment après un changement de mot de passe.
+    /// Empreinte du hachage d'un compte, embarquée dans le cookie et revalidée à chaque requête :
+    /// changer le mot de passe invalide d'un coup les cookies émis pour l'ancien, sur tous les
+    /// appareils du compte.
     /// </summary>
     public static string StampFor(string? passwordHash) =>
         string.IsNullOrEmpty(passwordHash)

@@ -1,0 +1,64 @@
+@inject AppGuardService Guard
+@inject SettingsService Settings
+@inject LocalizationService Loc
+
+@* Bloc Session : compte connecté, compte Qobuz de l'instance, langue, déconnexion, version.
+   Au bureau, en bas de la barre latérale ; sur mobile, où la barre latérale cède la place aux
+   onglets, en bas des Paramètres (le CSS n'affiche que l'un des deux selon la largeur). *@
+@if (Guard.Account is { } account)
+{
+    <section class="session @Class" aria-label='@Loc["session.title"]'>
+        <div class="session-who">
+            <span class="session-avatar" aria-hidden="true">@Initial(account.Username)</span>
+            <span class="session-id">
+                <strong>@account.Username</strong>
+                @* Le compte Qobuz est celui de toute l'instance : il est rappelé sous l'identifiant
+                   de l'utilisateur, pour qu'on sache avec quel abonnement on télécharge. *@
+                @if (!string.IsNullOrEmpty(Settings.Settings.UserDisplayName))
+                {
+                    <span class="session-qobuz" title='@Loc["nav.qobuzAccount"]'>Qobuz · @Settings.Settings.UserDisplayName</span>
+                }
+                @* Sans abonnement, le libellé d'offre est vide : la pastille d'alerte prend sa place,
+                   sans quoi le compte paraîtrait normal jusqu'au premier téléchargement. *@
+                @if (!Settings.Settings.HasSubscription)
+                {
+                    <a class="user-label user-label-alert" href="/settings"
+                       title='@Loc["account.badge.noneTitle"]'>@Loc["account.badge.none"]</a>
+                }
+                else if (Settings.Settings.IsSubscriptionExpired())
+                {
+                    <a class="user-label user-label-alert" href="/settings"
+                       title='@Loc["account.badge.expiredTitle"]'>@Loc["account.badge.expired"]</a>
+                }
+                else if (!string.IsNullOrEmpty(Settings.Settings.UserLabel))
+                {
+                    <span class="user-label">@Settings.Settings.UserLabel</span>
+                }
+            </span>
+            @if (account.IsAdmin)
+            {
+                <span class="session-role">@Loc["users.role.admin"]</span>
+            }
+        </div>
+
+        <div class="session-lang">
+            <span>@Loc["session.language"]</span>
+            <LanguageSwitch />
+        </div>
+
+        @* Déconnecte de l'application, et elle seule : le compte Qobuz est partagé par tous les
+           utilisateurs, il ne se déconnecte que depuis les Paramètres, par un administrateur. *@
+        <form method="post" action="/auth/lock">
+            <button type="submit" class="btn btn-outline session-logout">@Loc["nav.logout"]</button>
+        </form>
+
+        <div class="session-version">v@(AppInfo.Version)</div>
+    </section>
+}
+
+@code {
+    [Parameter] public string? Class { get; set; }
+
+    private static string Initial(string name) =>
+        string.IsNullOrEmpty(name) ? "?" : name[..1].ToUpperInvariant();
+}

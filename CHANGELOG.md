@@ -5,6 +5,67 @@ All notable changes to QBDL.Web (formerly QobuzDLX.Web) are documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.8.0] - 2026-11-22
+
+### Added
+- **Image de développement `:dev`.** Chaque push sur la branche `dev` construit, teste puis publie
+  `thimble9057/qobuzdlx.web:dev` (amd64 et arm64). Elle ne publie jamais `latest` ni de tag de
+  version. Une image dev s'annonce `1.8.0-dev+<commit>` dans la barre latérale et dans `/healthz` ;
+  une release continue d'afficher la version seule.
+- **Barre d'onglets sur mobile** : Recherche, Téléchargement (avec le nombre d'éléments restants),
+  Paramètres, et Utilisateurs pour un administrateur. Elle remplace le menu latéral escamotable et
+  se retire pendant la saisie au clavier. Langue, déconnexion et version passent en bas des
+  Paramètres.
+- **Mini-carte « En cours »** dans la barre latérale du bureau : pochette, titre et progression du
+  téléchargement en cours.
+- **Police Space Grotesk**, seule police de l'interface (titres et texte), auto-hébergée dans
+  `wwwroot/fonts` avec sa licence SIL OFL 1.1 : aucune requête vers un service tiers. Échelle
+  resserrée : titres de page de 27 à 34 px, texte courant à 14 px, graisses de 400 à 600.
+  Chiffres tabulaires pour les valeurs qui changent en direct (pourcentages, compteurs, débit).
+
+### Changed
+- **Nouvelle interface, première étape : les fondations.** Fond nuit gravé de sillons de disque,
+  verre dépoli, actions en blanc ; le rose-rouge disparaît. Les pages gardent leur disposition en
+  attendant leur refonte, page par page.
+- **Barre latérale du bureau redessinée** : navigation avec icônes, puis bloc Session en bas
+  (compte, compte Qobuz et abonnement, langue, déconnexion, version).
+- **Reconnexion discrète** : un bandeau en haut de page remplace l'écran plein. Mêmes messages, et
+  le bouton « Recharger » est disponible dès la première tentative.
+- **Recherche en grille.** Les albums s'affichent en grandes pochettes (deux colonnes sur
+  téléphone), avec sous chacune titre, artiste, date, pistes, format, et une capsule « choisir |
+  Télécharger ». « Dans la file » et « Déjà téléchargé » restent visibles. Pistes et artistes en
+  listes denses ; un artiste déplié montre sa discographie en grille, avec « Tout télécharger ».
+  La barre de sélection ne masque plus la dernière rangée.
+- **Téléchargement.** Carte « En cours » avec la pochette et le disque qui en sort (il tourne
+  pendant le téléchargement, sauf si l'appareil demande moins d'animations), grand pourcentage et
+  un segment par piste pour les albums et playlists. File avec badges d'état et boutons ronds ;
+  Annuler et Passer passent dans la carte « En cours ». Journal à côté de la file sur grand écran.
+- **Paramètres** en colonnes (trois au bureau), **Utilisateurs** et écrans de **connexion**
+  habillés dans le nouveau style ; les formulaires de connexion ne changent pas.
+- **Fond animé par les pages** : les pochettes affichées (résultats, file) tapissent le fond, en
+  gris et floutées.
+- **Nouvelle icône d'application**, aux couleurs de l'interface : une flèche posée sur les
+  sillons, pour l'onglet du navigateur comme pour l'écran d'accueil, aux bords arrondis là où le
+  système ne découpe pas l'icône.
+
+### Fixed
+- **Plantage en boucle au démarrage quand le dossier de configuration n'existait pas sur
+  l'hôte.** Docker le créait au nom de root, et l'application, qui tourne en `qbdlx` (UID 1000),
+  ne pouvait pas y écrire. L'image démarre désormais en root le temps de reprendre `/config` et le
+  seul dossier `/downloads` (jamais son contenu), puis lance l'application en `qbdlx`. Rien ne
+  change quand les droits sont déjà bons, ni quand le conteneur est lancé avec `--user`. Si la
+  correction est impossible (partage réseau, par exemple), un message indique la commande
+  `chown` à lancer sur l'hôte.
+- Dans les Paramètres, cliquer sur le libellé d'une case la coche désormais (il n'y était pas
+  relié).
+- Les variables de modèle (Paramètres → Modèles) se copient aussi au clavier.
+- Focus clavier visible sur tous les boutons ; la bascule FR | EN annonce la langue et son état.
+- **Image testée avant publication.** Avant de publier, la construction démarre l'image, vérifie
+  que `/healthz` annonce `QBDL.Web` avec la version attendue et que la page d'accueil répond. En
+  cas d'échec, elle affiche les journaux du conteneur et ne publie rien.
+
 ## [1.7.0] - 2026-11-16
 
 ### Added
