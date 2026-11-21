@@ -45,7 +45,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Fond animé par les pages** : les pochettes affichées (résultats, file) tapissent le fond, en
   gris et floutées.
 - **Nouvelle icône d'application**, aux couleurs de l'interface : une flèche posée sur les
-  sillons, pour l'onglet du navigateur comme pour l'écran d'accueil.
+  sillons, pour l'onglet du navigateur comme pour l'écran d'accueil, aux bords arrondis là où le
+  système ne découpe pas l'icône.
 
 ### Fixed
 - **Plantage en boucle au démarrage quand le dossier de configuration n'existait pas sur
