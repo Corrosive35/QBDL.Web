@@ -1792,9 +1792,10 @@ select {
     .qrow { grid-template-columns: 44px minmax(0, 1fr) auto; }
 }
 
-/* Très petits écrans : la capsule garde le mot « Télécharger » plutôt que l'icône. */
+/* Très petits écrans : la capsule d'album garde le mot « Télécharger » plutôt que l'icône. La
+   capsule compacte des pistes n'a que l'icône : elle la garde. */
 @media (max-width: 380px) {
-    .alb-caps .alb-caps-dl .nav-icon { display: none; }
+    .alb-caps:not(.is-compact) .alb-caps-dl .nav-icon { display: none; }
 }
 
 @media (max-width: 480px) {
