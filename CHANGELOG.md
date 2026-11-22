@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.1] - 2026-11-22
+
 ### Fixed
 - **Mobile** : plus de cadre bleu au tapotement, ni de menu de lien à l'appui long, et
   l'interface n'est plus sélectionnable par erreur ; les champs, le journal et les erreurs le
