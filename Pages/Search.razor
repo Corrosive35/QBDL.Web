@@ -329,7 +329,7 @@
     private RenderFragment Capsule(string title, bool selected, bool queued, Action toggle, Action queue, bool compact = false)
     {
         var action = queued ? Loc["search.inQueue"] : Loc["search.download"];
-        return @<div class="alb-caps">
+        return @<div class="alb-caps@(compact ? " is-compact" : "")">
             <button type="button" class="alb-caps-sel" aria-pressed="@(selected ? "true" : "false")"
                     aria-label='@Loc.T("search.selectItem", title)' @onclick="toggle">
                 <i>
