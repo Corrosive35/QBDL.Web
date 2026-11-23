@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommunityApplications>
+  <Profile>This repository provides QBDL.Web, a self-hosted web application for downloading music with your own streaming subscription, from any browser or from its Android companion app. Source code, documentation and releases: https://github.com/Corrosive35/QBDL.Web. For help or to report a problem, please open an issue: https://github.com/Corrosive35/QBDL.Web/issues</Profile>
+  <Icon>https://raw.githubusercontent.com/Corrosive35/QBDL.Web/main/wwwroot/icon-512.png</Icon>
+  <WebPage>https://github.com/Corrosive35/QBDL.Web</WebPage>
+</CommunityApplications>

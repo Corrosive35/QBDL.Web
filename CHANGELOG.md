@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-11-23
+
+### Added
+- **PUID et PGID** : l'application peut tourner sous un autre utilisateur que 1000:1000, par
+  exemple `PUID=99` et `PGID=100` (nobody:users) sous Unraid. Le démarrage reprend `/config` et le
+  dossier `/downloads` pour cet utilisateur, comme il le faisait pour 1000. Sans ces variables,
+  rien ne change. Une valeur invalide ou 0 (root) empêche le démarrage, avec un message clair.
+  Quand une installation existante change d'utilisateur (de 1000 à 99:100, par exemple), ce que
+  l'ancien possédait dans `/downloads` passe au nouveau, une seule fois et sans toucher aux droits,
+  pour que les nouveaux albums puissent s'écrire dans les dossiers d'artistes existants.
+- **Gabarit Unraid** pour Community Applications : `ca_profile.xml` et `templates/qbdl-web.xml`.
+
+### Changed
+- Le compte système de l'image s'appelle désormais `qbdl` (auparavant `qbdlx`), avec le même UID
+  et GID 1000. La propriété des fichiers, qui se règle sur l'UID, ne change pas : seul un
+  conteneur lancé avec `--user qbdlx` (par le nom) doit passer à `--user qbdl` ou `--user 1000`.
+
 ## [1.8.1] - 2026-11-22
 
 ### Fixed

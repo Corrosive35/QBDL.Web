@@ -6,3 +6,5 @@ config/
 .git
 .vs
 screenshots/
+ca_profile.xml
+templates/

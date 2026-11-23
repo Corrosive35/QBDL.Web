@@ -102,11 +102,16 @@ Open your browser at **http://localhost:8080**
 
 ### File permissions
 
-The container runs as a non-root user `qbdlx` with **UID 1000** and **GID 1000**. You must set the correct ownership on your mounted volumes so the container can read and write to them:
+The application never runs as root. By default it runs as **UID 1000** and **GID 1000**; set
+`PUID` and `PGID` to choose another user, for example `-e PUID=99 -e PGID=100` (`nobody:users`)
+on Unraid.
 
-```bash
-chown -R 1000:1000 /path/to/downloads /path/to/config
-```
+At startup, the container takes over `/config` (recursively) and the `/downloads` folder itself
+(never its contents) when that user cannot write to them, for instance a folder Docker has just
+created as root. If it cannot, it stops and prints the `chown` command to run on the host. When
+an existing installation switches to another user (from 1000 to 99:100, for example), what the
+previous user owned in `/downloads` is handed over once, permissions unchanged. A container
+started with `--user` runs as that user and ignores `PUID` and `PGID`.
 
 ---
 

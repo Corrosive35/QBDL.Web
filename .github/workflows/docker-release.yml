@@ -15,8 +15,10 @@
 # Test avant publication (dev, tags et lancement manuel) : l'image amd64 est chargée sur le
 # runner et démarrée ; /healthz doit répondre « QBDL.Web » avec la version attendue, et la page
 # d'accueil doit répondre. Elle est démarrée une seconde fois avec /config et /downloads
-# appartenant à root, comme quand Docker crée un dossier d'hôte absent. En cas d'échec, les
-# journaux du conteneur sont affichés et rien n'est publié.
+# appartenant à root, comme quand Docker crée un dossier d'hôte absent, puis une troisième avec
+# en plus PUID=99 et PGID=100 (Unraid) ; PUID=0 doit être refusé. Enfin, une installation
+# existante en 1000 passe à 99:100 : sa bibliothèque doit suivre. En cas d'échec, les journaux du
+# conteneur sont affichés et rien n'est publié.
 #
 # Lancement manuel (onglet Actions → « Docker image » → « Run workflow ») : même construction et
 # même test, mais rien n'est publié. Utile pour vérifier qu'une branche compile avant de poser le
@@ -166,7 +168,7 @@ jobs:
 
       # Cas réel : Docker crée en root un dossier d'hôte absent. Le point d'entrée doit reprendre
       # /config (récursivement) et le seul dossier /downloads (sans toucher à son contenu), puis
-      # lancer l'application sous qbdlx, jamais en root.
+      # lancer l'application sous 1000:1000, jamais en root.
       - name: "Test : volumes créés par root"
         run: |
           fail() {
@@ -206,6 +208,152 @@ jobs:
           echo "Volumes root : /config et /downloads repris par 1000, contenu de /downloads intact, application en 1000."
 
           docker rm -f qbdl-web-root > /dev/null
+
+      # Unraid : PUID=99 PGID=100 (nobody:users), volumes appartenant à root. Mêmes reprises que
+      # ci-dessus, mais pour 99:100 ; HOME doit rester inscriptible. Puis PUID=0 : le conteneur
+      # doit refuser de démarrer.
+      - name: "Test : PUID=99 PGID=100"
+        run: |
+          fail() {
+            echo "::error::$1"
+            echo "----- Journaux du conteneur -----"
+            docker logs qbdl-web-puid 2>&1 || true
+            exit 1
+          }
+
+          cfg=$(mktemp -d)
+          dl=$(mktemp -d)
+          sudo mkdir "$dl/bibliotheque"
+          sudo chown root:root "$cfg" "$dl" "$dl/bibliotheque"
+          sudo chmod 755 "$cfg" "$dl" "$dl/bibliotheque"
+
+          docker run -d --name qbdl-web-puid -p 8082:8080 -e PUID=99 -e PGID=100 \
+            -v "$cfg:/config" -v "$dl:/downloads" qbdl-web:test
+
+          ok=""
+          for _ in $(seq 1 60); do
+            if [ "$(docker inspect -f '{{.State.Running}}' qbdl-web-puid)" != "true" ]; then
+              fail "Le conteneur s'est arrêté au démarrage avec PUID=99 PGID=100."
+            fi
+            if curl -fs --max-time 5 http://localhost:8082/healthz > /dev/null; then
+              ok=1
+              break
+            fi
+            sleep 2
+          done
+          [ -n "$ok" ] || fail "/healthz n'a pas répondu en 2 minutes avec PUID=99 PGID=100."
+
+          [ "$(stat -c %u:%g "$cfg")" = "99:100" ] || fail "/config n'a pas été repris par 99:100."
+          others=$(sudo find "$cfg" ! -user 99)
+          [ -z "$others" ] || fail "Des éléments de /config n'appartiennent pas à 99 : $others"
+          docker exec -u 99:100 qbdl-web-puid touch /config/.test-ecriture || fail "/config n'est pas inscriptible par 99:100."
+          [ "$(stat -c %u:%g "$dl")" = "99:100" ] || fail "/downloads n'a pas été repris par 99:100."
+          [ "$(stat -c %u "$dl/bibliotheque")" = "0" ] || fail "Le contenu de /downloads a été modifié."
+          [ "$(docker exec qbdl-web-puid stat -c %u:%g /proc/1)" = "99:100" ] || fail "L'application ne tourne pas en 99:100."
+          # Lu sous 99:100 : sans SYS_PTRACE (retiré par Docker), root ne peut pas lire l'environnement
+          # d'un processus d'un autre UID.
+          environ=$(docker exec -u 99:100 qbdl-web-puid cat /proc/1/environ | tr '\0' '\n') \
+            || fail "Environnement de l'application illisible."
+          home=$(sed -n 's/^HOME=//p' <<< "$environ")
+          docker exec -u 99:100 qbdl-web-puid sh -c 'test -w "$1"' sh "$home" \
+            || fail "HOME (« $home ») n'est pas inscriptible par 99:100."
+          echo "PUID=99 PGID=100 : /config et /downloads repris par 99:100, contenu de /downloads intact, application en 99:100, HOME $home inscriptible."
+
+          docker rm -f qbdl-web-puid > /dev/null
+
+          # PUID=0 : refus net, avant tout démarrage de l'application.
+          if out=$(timeout 60 docker run --rm -e PUID=0 qbdl-web:test 2>&1); then
+            echo "$out"
+            fail "PUID=0 a été accepté."
+          fi
+          grep -q "PUID=0" <<< "$out" || { echo "$out"; fail "PUID=0 refusé sans message explicite."; }
+          echo "PUID=0 : refusé."
+
+      # Installation existante en 1000 qui passe à 99:100 : une seule fois, ce que 1000 possédait
+      # dans /downloads passe à 99:100, droits inchangés ; le reste (ici un fichier de root) ne
+      # bouge pas. L'ancien UID est lu sur users.json, créé par le formulaire de premier compte.
+      # Deux variantes : /config comme l'a laissé l'installation, puis /config inscriptible par
+      # tous (users.json en 666), que le point d'entrée ne reprend pas ; la reprise ne doit pas
+      # se répéter pour autant.
+      - name: "Test : passage de 1000 à 99:100"
+        run: |
+          fail() {
+            echo "::error::$1"
+            echo "----- Journaux du conteneur -----"
+            docker logs qbdl-web-uid 2>&1 || true
+            exit 1
+          }
+          wait_healthz() {
+            for _ in $(seq 1 60); do
+              if [ "$(docker inspect -f '{{.State.Running}}' qbdl-web-uid)" != "true" ]; then
+                fail "Le conteneur s'est arrêté au démarrage ($1)."
+              fi
+              if curl -fs --max-time 5 http://localhost:8083/healthz > /dev/null; then
+                return 0
+              fi
+              sleep 2
+            done
+            fail "/healthz n'a pas répondu en 2 minutes ($1)."
+          }
+
+          scenario() {
+            local variant=$1
+            local cfg dl password left logs path
+            cfg=$(mktemp -d)
+            dl=$(mktemp -d)
+
+            # 1. Installation existante en 1000, avec son premier compte. Mot de passe de test
+            #    généré ici, masqué dans les journaux.
+            docker run -d --name qbdl-web-uid -p 8083:8080 -v "$cfg:/config" -v "$dl:/downloads" qbdl-web:test
+            wait_healthz "$variant, 1000"
+            password=$(openssl rand -hex 16)
+            echo "::add-mask::$password"
+            curl -fsS --max-time 15 -o /dev/null --data-urlencode "username=admin" \
+              --data-urlencode "password=$password" --data-urlencode "confirm=$password" \
+              http://localhost:8083/auth/setup || fail "Création du premier compte impossible ($variant)."
+            [ "$(sudo stat -c %u "$cfg/users.json")" = "1000" ] || fail "users.json n'a pas été créé par 1000 ($variant)."
+            docker rm -f qbdl-web-uid > /dev/null
+
+            if [ "$variant" = "config-666" ]; then
+              sudo chmod -R a+rwX "$cfg"
+              [ "$(sudo stat -c %a "$cfg/users.json")" = "666" ] || fail "users.json n'est pas en 666."
+            fi
+
+            # Bibliothèque de cette installation : dossiers et piste de 1000, plus un fichier de root.
+            sudo mkdir -p "$dl/admin/Artiste/Album"
+            sudo touch "$dl/admin/Artiste/Album/01.flac"
+            sudo chown -R 1000:1000 "$dl/admin"
+            sudo chmod 640 "$dl/admin/Artiste/Album/01.flac"
+            sudo touch "$dl/admin/Artiste/root.txt"
+
+            # 2. Même installation sous PUID=99 PGID=100.
+            docker run -d --name qbdl-web-uid -p 8083:8080 -e PUID=99 -e PGID=100 \
+              -v "$cfg:/config" -v "$dl:/downloads" qbdl-web:test
+            wait_healthz "$variant, 99:100"
+
+            left=$(sudo find "$dl" -user 1000)
+            [ -z "$left" ] || fail "Des éléments de /downloads appartiennent encore à 1000 ($variant) : $left"
+            for path in "$dl" "$dl/admin" "$dl/admin/Artiste" "$dl/admin/Artiste/Album" "$dl/admin/Artiste/Album/01.flac"; do
+              [ "$(sudo stat -c %u:%g "$path")" = "99:100" ] || fail "$path n'a pas été repris par 99:100 ($variant)."
+            done
+            [ "$(sudo stat -c %a "$dl/admin/Artiste/Album/01.flac")" = "640" ] || fail "Les droits d'un fichier repris ont changé ($variant)."
+            [ "$(sudo stat -c %u:%g "$dl/admin/Artiste/root.txt")" = "0:0" ] || fail "Un fichier de root a été repris ($variant)."
+            [ "$(sudo stat -c %u "$cfg/users.json")" = "99" ] || fail "users.json n'a pas été repris par 99 ($variant)."
+            logs=$(docker logs qbdl-web-uid 2>&1)
+            grep -q "l'UID passe de 1000 à 99" <<< "$logs" || fail "Message de reprise absent ($variant)."
+            docker exec -u 99:100 qbdl-web-uid mkdir /downloads/admin/Artiste/Nouvel-album \
+              || fail "Un nouvel album ne peut pas s'écrire dans un dossier d'artiste existant ($variant)."
+            docker restart qbdl-web-uid > /dev/null
+            wait_healthz "$variant, redémarrage"
+            logs=$(docker logs qbdl-web-uid 2>&1)
+            [ "$(grep -c "l'UID passe de" <<< "$logs")" = "1" ] || fail "La reprise s'est répétée au redémarrage ($variant)."
+            echo "1000 → 99:100 ($variant) : bibliothèque reprise une seule fois, droits inchangés, fichier de root intact."
+
+            docker rm -f qbdl-web-uid > /dev/null
+          }
+
+          scenario config-normal
+          scenario config-666
 
       - name: Connexion à Docker Hub
         if: steps.version.outputs.publish == 'true'
