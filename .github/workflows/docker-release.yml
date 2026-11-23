@@ -167,7 +167,7 @@ jobs:
 
       # Cas réel : Docker crée en root un dossier d'hôte absent. Le point d'entrée doit reprendre
       # /config (récursivement) et le seul dossier /downloads (sans toucher à son contenu), puis
-      # lancer l'application sous qbdlx, jamais en root.
+      # lancer l'application sous 1000:1000, jamais en root.
       - name: "Test : volumes créés par root"
         run: |
           fail() {

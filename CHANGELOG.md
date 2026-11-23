@@ -14,6 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rien ne change. Une valeur invalide ou 0 (root) empêche le démarrage, avec un message clair.
 - **Gabarit Unraid** pour Community Applications : `ca_profile.xml` et `templates/qbdl-web.xml`.
 
+### Changed
+- Le compte système de l'image s'appelle désormais `qbdl` (auparavant `qbdlx`), avec le même UID
+  et GID 1000. La propriété des fichiers, qui se règle sur l'UID, ne change pas : seul un
+  conteneur lancé avec `--user qbdlx` (par le nom) doit passer à `--user qbdl` ou `--user 1000`.
+
 ## [1.8.1] - 2026-11-22
 
 ### Fixed

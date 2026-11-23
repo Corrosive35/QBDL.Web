@@ -12,9 +12,9 @@ using QBDL.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Le trousseau Data Protection chiffre le cookie d'accès. Par défaut il irait dans /home/qbdlx,
-// hors volume : chaque redémarrage du conteneur régénérerait les clés et invaliderait sans
-// trace tous les cookies émis.
+// Le trousseau Data Protection chiffre le cookie d'accès. Par défaut il irait dans le HOME du
+// compte de l'image, hors volume : chaque redémarrage du conteneur régénérerait les clés et
+// invaliderait sans trace tous les cookies émis.
 //
 // Le nom d'application sert lui aussi à chiffrer : le changer déconnecte chaque appareil,
 // application Android comprise. Passé de « QobuzDLX.Web » à « QBDL.Web » en 1.7.0, il ne doit

@@ -12,7 +12,7 @@
 # de l'image (Dockerfile) ne sert ici qu'à trouver son dossier HOME.
 set -eu
 
-APP_USER=qbdlx
+APP_USER=qbdl
 APP_HOME=/home/$APP_USER
 CONFIG_DIR="${CONFIG_PATH:-/config}"
 DOWNLOADS_DIR=/downloads

@@ -30,7 +30,7 @@ RUN apk add --no-cache flac icu-libs icu-data-full su-exec
 # Compte de l'image, UID:GID 1000:1000 : ceux de l'application quand PUID et PGID sont absents.
 # Son nom ne figure qu'ici et dans APP_USER (docker-entrypoint.sh) ; ailleurs, les droits se
 # règlent sur les numéros.
-RUN addgroup -g 1000 qbdlx && adduser -u 1000 -G qbdlx -D qbdlx
+RUN addgroup -g 1000 qbdl && adduser -u 1000 -G qbdl -D qbdl
 
 RUN mkdir -p /downloads /config && chown -R 1000:1000 /downloads /config
 
