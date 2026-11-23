@@ -24,14 +24,17 @@ WORKDIR /app
 #   sans quoi aucune culture nommée (fr-FR, en-US) n'existe — formats de nombres et tri
 #   alphabétique tenant compte des accents.
 # su-exec : le point d'entrée démarre en root le temps de réparer les droits des volumes, puis
-#   bascule sur qbdlx (voir docker-entrypoint.sh).
+#   bascule sur l'UID:GID de l'application (voir docker-entrypoint.sh).
 RUN apk add --no-cache flac icu-libs icu-data-full su-exec
 
+# Compte de l'image, UID:GID 1000:1000 : ceux de l'application quand PUID et PGID sont absents.
+# Son nom ne figure qu'ici et dans APP_USER (docker-entrypoint.sh) ; ailleurs, les droits se
+# règlent sur les numéros.
 RUN addgroup -g 1000 qbdlx && adduser -u 1000 -G qbdlx -D qbdlx
 
-RUN mkdir -p /downloads /config && chown -R qbdlx:qbdlx /downloads /config
+RUN mkdir -p /downloads /config && chown -R 1000:1000 /downloads /config
 
-COPY --from=build --chown=qbdlx:qbdlx /app .
+COPY --from=build --chown=1000:1000 /app .
 
 ENV ASPNETCORE_URLS=http://+:8080
 ENV CONFIG_PATH=/config
@@ -41,9 +44,10 @@ EXPOSE 8080
 
 VOLUME ["/downloads", "/config"]
 
-# Pas de USER qbdlx : le point d'entrée démarre en root pour corriger les droits d'un volume que
-# Docker a créé en root sur l'hôte, puis lance l'application sous qbdlx (su-exec). L'application
-# elle-même ne tourne jamais en root ; un conteneur lancé avec --user démarre directement.
+# Pas de USER : le point d'entrée démarre en root pour corriger les droits d'un volume que Docker
+# a créé en root sur l'hôte, puis lance l'application sous 1000:1000, ou sous PUID:PGID s'ils
+# sont fournis (su-exec). L'application elle-même ne tourne jamais en root ; un conteneur lancé
+# avec --user démarre directement.
 # Le sed retire d'éventuels retours chariot Windows, qui rendraient le script inexécutable.
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh && chmod 755 /usr/local/bin/docker-entrypoint.sh
