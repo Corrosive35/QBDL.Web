@@ -249,7 +249,11 @@ jobs:
           [ "$(stat -c %u:%g "$dl")" = "99:100" ] || fail "/downloads n'a pas été repris par 99:100."
           [ "$(stat -c %u "$dl/bibliotheque")" = "0" ] || fail "Le contenu de /downloads a été modifié."
           [ "$(docker exec qbdl-web-puid stat -c %u:%g /proc/1)" = "99:100" ] || fail "L'application ne tourne pas en 99:100."
-          home=$(docker exec qbdl-web-puid cat /proc/1/environ | tr '\0' '\n' | sed -n 's/^HOME=//p')
+          # Lu sous 99:100 : sans SYS_PTRACE (retiré par Docker), root ne peut pas lire l'environnement
+          # d'un processus d'un autre UID.
+          environ=$(docker exec -u 99:100 qbdl-web-puid cat /proc/1/environ | tr '\0' '\n') \
+            || fail "Environnement de l'application illisible."
+          home=$(sed -n 's/^HOME=//p' <<< "$environ")
           docker exec -u 99:100 qbdl-web-puid sh -c 'test -w "$1"' sh "$home" \
             || fail "HOME (« $home ») n'est pas inscriptible par 99:100."
           echo "PUID=99 PGID=100 : /config et /downloads repris par 99:100, contenu de /downloads intact, application en 99:100, HOME $home inscriptible."
