@@ -5,7 +5,8 @@
 # /downloads, où l'application ne pourrait rien écrire. Le script répare ces droits, puis rend
 # la main à l'application sous l'UID:GID choisi : elle ne tourne jamais en root. Il ne change
 # rien sur une installation en ordre : seul ce qui n'appartient pas à cet UID ET n'est pas
-# inscriptible par lui est repris.
+# inscriptible par lui est repris, plus, une seule fois après un changement d'UID, ce que
+# l'ancien UID possédait dans /downloads.
 #
 # UID:GID : 1000:1000 par défaut, ou PUID et PGID (99 et 100 sous Unraid, dont les partages
 # appartiennent à nobody:users). Les droits se règlent sur ces seuls numéros : le nom du compte
@@ -66,14 +67,52 @@ first_unwritable_config() {
     done
 }
 
+# UID précédent d'une installation existante : le propriétaire de users.json, à défaut de
+# settings.json, que l'application écrit elle-même. Lu avant la reprise de /config, qui
+# l'effacerait. Rien sur une installation neuve.
+previous_uid=""
+for file in "$CONFIG_DIR/users.json" "$CONFIG_DIR/settings.json"; do
+    if [ -f "$file" ]; then
+        previous_uid="$(stat -c %u "$file")"
+        break
+    fi
+done
+
+# Changement d'UID (1000 puis 99:100 sous Unraid, par exemple) : une seule fois, ce qui
+# appartient à l'ancien UID dans /downloads passe au nouveau, sans quoi un nouvel album ne
+# pourrait pas s'écrire dans un dossier d'artiste existant. Rien d'autre ne bouge : ni les
+# fichiers de l'utilisateur ou de root, ni les droits, ni la cible des liens (-h), ni les autres
+# montages (-xdev). Faite avant /config : interrompue, la reprise recommence au démarrage
+# suivant, users.json gardant l'ancien propriétaire jusque-là. Jamais depuis root (0).
+if [ -n "$previous_uid" ] && [ "$previous_uid" != "0" ] && [ "$previous_uid" != "$APP_UID" ] \
+        && [ -d "$DOWNLOADS_DIR" ]; then
+    echo "QBDL.Web : l'UID passe de $previous_uid à $APP_UID ; reprise des fichiers de $previous_uid dans $DOWNLOADS_DIR (une seule fois, cela peut prendre plusieurs minutes)."
+    taken="$(mktemp)"
+    if find "$DOWNLOADS_DIR" -xdev -user "$previous_uid" -print \
+            -exec chown -h "$APP_UID:$APP_GID" {} + > "$taken" 2>/dev/null; then
+        echo "QBDL.Web : $(wc -l < "$taken") élément(s) de $DOWNLOADS_DIR repris pour $APP_UID:$APP_GID."
+    else
+        cat >&2 <<EOF
+
+QBDL.Web : attention, la reprise de $DOWNLOADS_DIR pour $APP_UID:$APP_GID n'a pas abouti. Des
+dossiers de $previous_uid peuvent refuser les nouveaux albums. Sur l'hôte, lancez :
+
+    find <dossier monté sur $DOWNLOADS_DIR> -user $previous_uid -exec chown -h $APP_UID:$APP_GID {} +
+
+EOF
+    fi
+    rm -f "$taken"
+fi
+
 # /config : petit (réglages, comptes, trousseau), repris récursivement s'il le faut.
 if [ -d "$CONFIG_DIR" ] && [ -n "$(first_unwritable_config)" ]; then
     echo "QBDL.Web : droits de $CONFIG_DIR corrigés pour $APP_UID:$APP_GID."
     chown -R "$APP_UID:$APP_GID" "$CONFIG_DIR" 2>/dev/null || true
 fi
 
-# /downloads : le dossier lui-même seulement, jamais son contenu. La bibliothèque peut être
-# énorme, et ses fichiers comme ses sous-dossiers existants appartiennent à l'utilisateur.
+# /downloads : hors changement d'UID (plus haut), le dossier lui-même seulement, jamais son
+# contenu. La bibliothèque peut être énorme, et ses fichiers comme ses sous-dossiers existants
+# appartiennent à l'utilisateur.
 if [ -d "$DOWNLOADS_DIR" ] && [ "$(stat -c %u "$DOWNLOADS_DIR")" != "$APP_UID" ] \
         && ! writable_by_app "$DOWNLOADS_DIR"; then
     echo "QBDL.Web : propriétaire de $DOWNLOADS_DIR corrigé pour $APP_UID:$APP_GID (contenu inchangé)."

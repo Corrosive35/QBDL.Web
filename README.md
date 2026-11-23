@@ -108,8 +108,10 @@ on Unraid.
 
 At startup, the container takes over `/config` (recursively) and the `/downloads` folder itself
 (never its contents) when that user cannot write to them, for instance a folder Docker has just
-created as root. If it cannot, it stops and prints the `chown` command to run on the host. A
-container started with `--user` runs as that user and ignores `PUID` and `PGID`.
+created as root. If it cannot, it stops and prints the `chown` command to run on the host. When
+an existing installation switches to another user (from 1000 to 99:100, for example), what the
+previous user owned in `/downloads` is handed over once, permissions unchanged. A container
+started with `--user` runs as that user and ignores `PUID` and `PGID`.
 
 ---
 

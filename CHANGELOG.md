@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   exemple `PUID=99` et `PGID=100` (nobody:users) sous Unraid. Le démarrage reprend `/config` et le
   dossier `/downloads` pour cet utilisateur, comme il le faisait pour 1000. Sans ces variables,
   rien ne change. Une valeur invalide ou 0 (root) empêche le démarrage, avec un message clair.
+  Quand une installation existante change d'utilisateur (de 1000 à 99:100, par exemple), ce que
+  l'ancien possédait dans `/downloads` passe au nouveau, une seule fois et sans toucher aux droits,
+  pour que les nouveaux albums puissent s'écrire dans les dossiers d'artistes existants.
 - **Gabarit Unraid** pour Community Applications : `ca_profile.xml` et `templates/qbdl-web.xml`.
 
 ### Changed
