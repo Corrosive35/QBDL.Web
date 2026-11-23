@@ -71,9 +71,11 @@ first_unwritable_config() {
 # settings.json, que l'application écrit elle-même. Lu avant la reprise de /config, qui
 # l'effacerait. Rien sur une installation neuve.
 previous_uid=""
+marker=""
 for file in "$CONFIG_DIR/users.json" "$CONFIG_DIR/settings.json"; do
     if [ -f "$file" ]; then
         previous_uid="$(stat -c %u "$file")"
+        marker="$file"
         break
     fi
 done
@@ -82,8 +84,10 @@ done
 # appartient à l'ancien UID dans /downloads passe au nouveau, sans quoi un nouvel album ne
 # pourrait pas s'écrire dans un dossier d'artiste existant. Rien d'autre ne bouge : ni les
 # fichiers de l'utilisateur ou de root, ni les droits, ni la cible des liens (-h), ni les autres
-# montages (-xdev). Faite avant /config : interrompue, la reprise recommence au démarrage
-# suivant, users.json gardant l'ancien propriétaire jusque-là. Jamais depuis root (0).
+# montages (-xdev). Le fichier lu passe au nouvel UID après la reprise, et seulement après :
+# interrompue, elle recommence au démarrage suivant ; terminée, elle ne se répète pas, même si
+# ce fichier reste inscriptible par le nouvel UID et que /config n'est donc pas repris plus bas.
+# Jamais depuis root (0).
 if [ -n "$previous_uid" ] && [ "$previous_uid" != "0" ] && [ "$previous_uid" != "$APP_UID" ] \
         && [ -d "$DOWNLOADS_DIR" ]; then
     echo "QBDL.Web : l'UID passe de $previous_uid à $APP_UID ; reprise des fichiers de $previous_uid dans $DOWNLOADS_DIR (une seule fois, cela peut prendre plusieurs minutes)."
@@ -91,6 +95,7 @@ if [ -n "$previous_uid" ] && [ "$previous_uid" != "0" ] && [ "$previous_uid" != 
     if find "$DOWNLOADS_DIR" -xdev -user "$previous_uid" -print \
             -exec chown -h "$APP_UID:$APP_GID" {} + > "$taken" 2>/dev/null; then
         echo "QBDL.Web : $(wc -l < "$taken") élément(s) de $DOWNLOADS_DIR repris pour $APP_UID:$APP_GID."
+        chown "$APP_UID:$APP_GID" "$marker" 2>/dev/null || true
     else
         cat >&2 <<EOF
 
