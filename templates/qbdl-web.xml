@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Container version="2">
+  <Name>QBDL.Web</Name>
+  <Repository>thimble9057/qobuzdlx.web</Repository>
+  <Registry>https://hub.docker.com/r/thimble9057/qobuzdlx.web</Registry>
+  <Network>bridge</Network>
+  <Shell>sh</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/Corrosive35/QBDL.Web/issues</Support>
+  <Project>https://github.com/Corrosive35/QBDL.Web</Project>
+  <Overview>Self-hosted web application for downloading high-quality music (MP3 320 and FLAC up to 24-bit/192 kHz) from Qobuz with your own subscription. Accounts managed by an administrator share one subscription; each user has their own download folder, quality, naming templates, tagging options and language (English or French). Search, batch downloads of albums, tracks, playlists and artists, full metadata tagging, embedded artwork and live progress. On first launch, open the WebUI to create the administrator account. Unofficial project, not affiliated with the streaming service.</Overview>
+  <Category>Downloaders: MediaApp:Music</Category>
+  <WebUI>http://[IP]:[PORT:8080]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/Corrosive35/QBDL.Web/main/templates/qbdl-web.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/Corrosive35/QBDL.Web/main/wwwroot/icon-512.png</Icon>
+  <Config Name="WebUI port" Target="8080" Default="8080" Mode="tcp" Description="Port of the web interface." Type="Port" Display="always" Required="true" Mask="false">8080</Config>
+  <Config Name="Config" Target="/config" Default="/mnt/user/appdata/qbdl-web" Mode="rw" Description="Settings, accounts and sign-in keys." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/qbdl-web</Config>
+  <Config Name="Downloads" Target="/downloads" Default="/mnt/user/Music" Mode="rw" Description="Music library. By default, each account downloads into a subfolder named after it; the administrator can change these folders." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/Music</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Description="User ID the application runs as (99 = nobody)." Type="Variable" Display="advanced" Required="false" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Description="Group ID the application runs as (100 = users)." Type="Variable" Display="advanced" Required="false" Mask="false">100</Config>
+</Container>

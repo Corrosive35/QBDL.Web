@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   exemple `PUID=99` et `PGID=100` (nobody:users) sous Unraid. Le démarrage reprend `/config` et le
   dossier `/downloads` pour cet utilisateur, comme il le faisait pour 1000. Sans ces variables,
   rien ne change. Une valeur invalide ou 0 (root) empêche le démarrage, avec un message clair.
+- **Gabarit Unraid** pour Community Applications : `ca_profile.xml` et `templates/qbdl-web.xml`.
 
 ## [1.8.1] - 2026-11-22
 
