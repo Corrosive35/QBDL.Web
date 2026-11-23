@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-11-23
+
 ### Added
 - **PUID et PGID** : l'application peut tourner sous un autre utilisateur que 1000:1000, par
   exemple `PUID=99` et `PGID=100` (nobody:users) sous Unraid. Le démarrage reprend `/config` et le
