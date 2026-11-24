@@ -7,87 +7,105 @@
 @inject ILogger<Login> Logger
 @inherits LocalizedComponentBase
 
-<div class="auth-card">
-    <div class="card">
+@* Le compte Qobuz est celui de toute l'instance : seul un administrateur le connecte. Les autres
+   n'ont qu'à attendre, dans la carte habituelle — la reprise depuis le jeton enregistré, elle, vaut
+   pour tous (OnInitializedAsync). *@
+@if (!Guard.IsAdmin)
+{
+    <div class="auth-card">
+        <div class="card">
+            <div class="auth-head">
+                <h2 class="auth-logo">QBDL</h2>
+                <p class="auth-subtitle">@Loc["login.subtitle"]</p>
+            </div>
+            <p class="auth-waiting">@Loc["login.waitAdmin"]</p>
+        </div>
+    </div>
+}
+else
+{
+    @* Deux cadres : la connexion Qobuz, recommandée, et le jeton en secours. Côte à côte au bureau,
+       empilés sous 768 px (app.css, « Connexion Qobuz »). Chacun a son message d'erreur, en tête
+       sous son titre, comme l'erreur de l'écran de connexion. *@
+    <div class="qobuz-connect">
         <div class="auth-head">
             <h2 class="auth-logo">QBDL</h2>
-            <p class="auth-subtitle">@Loc["login.subtitle"]</p>
+            <h1 class="qobuz-connect-title">@Loc["login.connectTitle"]</h1>
+            <p class="auth-subtitle">@Loc["login.connectLead"]</p>
         </div>
 
-        @* Le compte Qobuz est celui de toute l'instance : seul un administrateur le connecte. Les
-           autres n'ont qu'à attendre — la reprise depuis le jeton enregistré, elle, vaut pour tous
-           (OnInitializedAsync). *@
-        @if (!Guard.IsAdmin)
-        {
-            <p class="auth-waiting">@Loc["login.waitAdmin"]</p>
-        }
-        else
-        {
-        @* Deux blocs indépendants, chacun avec son emplacement de message : passer à deux cadres côte
-           à côte (empilés sur mobile) ne toucherait que ce balisage et le CSS. *@
         <div class="qobuz-login-form">
-            <div class="qobuz-login-oauth">
+            @* Connexion Qobuz : sur la page de qobuz.com, qui revient ensuite sur
+               /auth/qobuz/callback (QobuzSignInService). Elle remplace la connexion par e-mail et
+               mot de passe, que Qobuz refuse aux applications tierces. *@
+            <div class="card qobuz-login-oauth">
+                <p class="card-title">@Loc["login.recommended"]</p>
+                <h2 class="qobuz-login-heading">@Loc["login.qobuz"]</h2>
                 @if (!string.IsNullOrEmpty(_oauthError))
                 {
                     <div class="auth-error" role="alert">@_oauthError</div>
                 }
+                <p class="qobuz-login-text">@Loc["login.qobuzText"]</p>
 
-                @* Connexion Qobuz : sur la page de qobuz.com, qui revient ensuite sur
-                   /auth/qobuz/callback (QobuzSignInService). Elle remplace la connexion par e-mail et
-                   mot de passe, que Qobuz refuse aux applications tierces. *@
-                <button class="btn btn-primary" style="width:100%;" @onclick="StartQobuzSignIn" disabled="@_loading">
+                @* Bureau seulement : sur mobile, la phrase ci-dessus suffit (app.css). *@
+                <ol class="qobuz-login-steps">
+                    <li><span class="qobuz-login-step-num" aria-hidden="true">1</span><span>@Loc["login.step1"]</span></li>
+                    <li><span class="qobuz-login-step-num" aria-hidden="true">2</span><span>@Loc["login.step2"]</span></li>
+                    <li><span class="qobuz-login-step-num" aria-hidden="true">3</span><span>@Loc["login.step3"]</span></li>
+                </ol>
+
+                <button class="btn btn-primary qobuz-login-go" @onclick="StartQobuzSignIn" disabled="@_loading">
                     @(_loading ? Loc["login.submitting"] : Loc["login.qobuz"])
                 </button>
-                <p class="auth-subtitle" style="text-align:center;">@Loc["login.qobuzHint"]</p>
+                <p class="qobuz-login-note">@Loc["login.qobuzHint"]</p>
                 @* qobuz.com redonne sans rien demander le compte déjà ouvert dans le navigateur, et
                    aucun paramètre connu de sa page de connexion ne force la saisie : la page de retour
                    nomme le compte, et cette phrase explique comment en changer. *@
-                <p class="auth-subtitle" style="text-align:center;">@Loc["login.qobuzSwitch"]</p>
+                <p class="qobuz-login-note qobuz-login-switch">@Loc["login.qobuzSwitch"]</p>
             </div>
 
-            @* Repli : un jeton copié depuis play.qobuz.com. Ouvert d'emblée s'il a servi la dernière
-               fois ; l'état ouvert ou fermé appartient ensuite au navigateur. *@
-            <div class="qobuz-login-token">
-                <details style="margin-top:16px;" open="@_tokenOpen">
-                    <summary class="auth-more">@Loc["login.useToken"]</summary>
-                    <div style="margin-top:8px;">
-                        @if (!string.IsNullOrEmpty(_tokenError))
-                        {
-                            <div class="auth-error" role="alert">@_tokenError</div>
-                        }
+            @* Mobile seulement, entre les cadres empilés : il y remplace le surtitre du jeton. *@
+            <div class="qobuz-login-or">@Loc["login.or"]</div>
 
+            @* Repli : un jeton copié depuis play.qobuz.com, toujours visible. *@
+            <div class="card qobuz-login-token">
+                <p class="card-title">@Loc["login.fallback"]</p>
+                <h2 class="qobuz-login-heading">@Loc["login.tokenTitle"]</h2>
+                @if (!string.IsNullOrEmpty(_tokenError))
+                {
+                    <div class="auth-error" role="alert">@_tokenError</div>
+                }
+
+                <div class="form-group">
+                    <label for="qobuz-token">@Loc["login.token"]</label>
+                    <input id="qobuz-token" type="password" @bind="_token" placeholder='@Loc["login.tokenPlaceholder"]' />
+                </div>
+                <p class="qobuz-login-note qobuz-login-help">@Loc["login.tokenHelp"]</p>
+
+                <button class="btn btn-secondary qobuz-login-go" @onclick="DoTokenLogin" disabled="@_loading">
+                    @(_loading ? Loc["login.submitting"] : Loc["login.tokenSubmit"])
+                </button>
+
+                @* Pour un jeton émis par une autre application que le lecteur web. La connexion
+                   Qobuz, elle, passe toujours par l'app_id du lecteur web, le seul dont la clé
+                   d'échange est connue. *@
+                <details class="qobuz-login-custom">
+                    <summary class="auth-more">@Loc["login.customCredentials"]</summary>
+                    <div class="qobuz-login-custom-body">
                         <div class="form-group">
-                            <label>@Loc["login.token"]</label>
-                            <input type="password" @bind="_token" placeholder='@Loc["login.tokenPlaceholder"]' />
+                            <label for="qobuz-app-id">@Loc["login.appId"]</label>
+                            <input id="qobuz-app-id" type="text" @bind="_customAppId" placeholder="App ID" />
                         </div>
-
-                        <button class="btn btn-secondary" style="width:100%;margin-top:8px;" @onclick="DoTokenLogin" disabled="@_loading">
-                            @(_loading ? Loc["login.submitting"] : Loc["login.submit"])
-                        </button>
-
-                        @* Pour un jeton émis par une autre application que le lecteur web. La connexion
-                           Qobuz, elle, passe toujours par l'app_id du lecteur web, le seul dont la clé
-                           d'échange est connue. *@
-                        <details style="margin-top:16px;">
-                            <summary class="auth-more">@Loc["login.customCredentials"]</summary>
-                            <div style="margin-top:8px;">
-                                <div class="form-group">
-                                    <label>@Loc["login.appId"]</label>
-                                    <input type="text" @bind="_customAppId" placeholder="App ID" />
-                                </div>
-                                <div class="form-group">
-                                    <label>@Loc["login.appSecret"]</label>
-                                    <input type="password" @bind="_customAppSecret" placeholder="App Secret" />
-                                </div>
-                            </div>
-                        </details>
+                        <div class="form-group">
+                            <label for="qobuz-app-secret">@Loc["login.appSecret"]</label>
+                            <input id="qobuz-app-secret" type="password" @bind="_customAppSecret" placeholder="App Secret" />
+                        </div>
                     </div>
                 </details>
             </div>
         </div>
-        }
     </div>
-</div>
+}
 
 @code {
     private string _token = "";
@@ -97,7 +115,6 @@
     private string _oauthError = "";
     private string _tokenError = "";
     private bool _loading;
-    private bool _tokenOpen;
 
     protected override void OnInitialized()
     {
@@ -106,7 +123,6 @@
         var s = Settings.Settings;
         _customAppId = s.AppId;
         _customAppSecret = s.AppSecret;
-        _tokenOpen = s.UseTokenLogin;
 
         SignIn.AccountConnected += OnAccountConnected;
     }

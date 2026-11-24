@@ -105,7 +105,8 @@ public sealed class QobuzSignInService
             // Plus lu depuis la disparition de la connexion par e-mail : une adresse laissée par
             // une version précédente n'a plus de raison de rester dans settings.json.
             s.Email = "";
-            // La page de connexion suivante ouvre d'emblée la voie qui a servi.
+            // Voie qui a servi, pour information : la page de connexion montre désormais les deux
+            // cadres et ne la lit plus.
             s.UseTokenLogin = viaToken;
             // Identité et état de l'abonnement : même code que la revalidation au démarrage.
             s.ApplyAccountStatus(result.User);

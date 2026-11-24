@@ -16,7 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Aucune adresse n'est à configurer : c'est celle par laquelle QBDL est ouvert. La page de retour
   nomme le compte connecté : qobuz.com redonne sans rien demander celui déjà ouvert dans le
   navigateur, et la page de connexion rappelle de s'en déconnecter avant de changer de compte. La
-  connexion par jeton reste disponible en dessous.
+  connexion par jeton reste disponible en secours, dans un second cadre : les deux sont côte à
+  côte sur ordinateur, empilés sur mobile.
 
 ### Changed
 - **Fin de la connexion par e-mail et mot de passe** : Qobuz la refuse aux applications tierces

@@ -149,7 +149,7 @@ Until it is connected, other users see a waiting message. You can connect with:
   so there is nothing to configure. In the Android app, the page opens in the phone's browser.
   Qobuz hands back the account already signed in to that browser: to switch accounts, sign out of
   qobuz.com there first. The return page shows which account was connected.
-- **Token** — Paste an existing user auth token, under *Sign in with token*
+- **Token** — Paste an existing user auth token in the *Token* frame, the fallback
 
 Qobuz no longer accepts email and password sign-in from third-party apps, so that option is gone.
 

@@ -26,6 +26,8 @@ public class AppSettings
     public string UserDisplayName { get; set; } = "";
     public string UserLabel { get; set; } = "";
     public string UserAvatar { get; set; } = "";
+    // Dernière voie de connexion (jeton ou connexion Qobuz). Plus lue depuis que la page de
+    // connexion montre les deux cadres ; gardée pour ne rien retirer de settings.json.
     public bool UseTokenLogin { get; set; }
 
     // État de l'abonnement, relu à chaque connexion. Persisté pour que les Paramètres et la barre
