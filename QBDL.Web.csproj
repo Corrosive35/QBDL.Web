@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>QBDL.Web</RootNamespace>
-    <Version>1.9.0</Version>
+    <Version>1.9.1</Version>
     <!-- Version informative = <Version>, sans « +<commit> » ajouté par le SDK. L'image de la
          branche dev la remplace au build (argument APP_VERSION du Dockerfile). -->
     <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
