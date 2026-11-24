@@ -13,11 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   passe. Dans l'application Android, cette page s'ouvre dans le navigateur du téléphone ; la page
   de connexion restée ouverte dans l'application se recharge quand la connexion aboutit. Le retour
   arrive sur une nouvelle adresse, `/auth/qobuz/callback`, valable une seule fois et dix minutes.
-  Aucune adresse n'est à configurer : c'est celle par laquelle QBDL est ouvert. La page de retour
-  nomme le compte connecté : qobuz.com redonne sans rien demander celui déjà ouvert dans le
-  navigateur, et la page de connexion rappelle de s'en déconnecter avant de changer de compte. La
-  connexion par jeton reste disponible en secours, dans un second cadre : les deux sont côte à
-  côte sur ordinateur, empilés sur mobile.
+  Aucune adresse n'est à configurer : c'est celle par laquelle QBDL est ouvert. Au bureau, on
+  revient directement dans l'application, dont la barre latérale nomme le compte ; dans le
+  navigateur du téléphone, une page nomme le compte connecté. qobuz.com redonne sans rien demander
+  le compte déjà ouvert dans le navigateur : la page de connexion rappelle de s'en déconnecter
+  avant de changer de compte. La connexion par jeton reste disponible en secours, dans un second
+  cadre : les deux sont côte à côte sur ordinateur, empilés sur mobile.
 
 ### Changed
 - **Fin de la connexion par e-mail et mot de passe** : Qobuz la refuse aux applications tierces

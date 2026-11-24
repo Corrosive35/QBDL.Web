@@ -325,9 +325,18 @@ app.MapGet(QobuzSignInService.CallbackPath, async (HttpContext ctx, QobuzSignInS
     var result = await signIn.CompleteAsync(query["state"].ToString(), code);
 
     // L'adresse de cette page porte le state et le code. Consommés, ils restent inutiles à
-    // divulguer : ni cache, ni Referer vers la page suivante.
+    // divulguer : ni cache, ni Referer vers la page suivante, redirection comprise.
     ctx.Response.Headers.CacheControl = "no-store";
     ctx.Response.Headers["Referrer-Policy"] = "no-referrer";
+
+    // Navigateur déjà connecté à QBDL (cookie d'accès validé par UseAuthentication) : retour direct
+    // dans l'application, dont la barre latérale nomme le compte Qobuz. Sans ce cookie, c'est en
+    // général le navigateur externe du téléphone, venu de l'application Android, où « / » ne
+    // montrerait que l'écran de connexion : la page de retour nomme le compte et invite à revenir
+    // dans l'application. Une erreur s'affiche toujours, cookie ou non.
+    if (result.Outcome == QobuzSignInService.Outcome.Connected && ctx.User.Identity?.IsAuthenticated == true)
+        return Results.Redirect("/");
+
     return Results.Content(QobuzSignInPage(loc, result), "text/html; charset=utf-8");
 });
 
