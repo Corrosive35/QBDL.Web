@@ -53,21 +53,42 @@ public class QobuzApiService
         var bundleUrl = PlayBaseUrl + bundleMatch.Groups[1].Value;
         var bundleJs = await _http.GetStringAsync(bundleUrl);
 
-        var appIdMatch = Regex.Match(bundleJs, @"production:\{api:\{appId:""(\d+)"",appSecret:""(\w+)""");
-        if (!appIdMatch.Success)
-        {
-            appIdMatch = Regex.Match(bundleJs, @"app_id:\s*""(\d+)""");
-            if (!appIdMatch.Success)
-                throw new Exception("Could not extract app_id from bundle.js");
-            _appId = appIdMatch.Groups[1].Value;
-        }
-        else
-        {
-            _appId = appIdMatch.Groups[1].Value;
-        }
+        _appId = ExtractAppId(bundleJs)
+            ?? throw new Exception("Could not extract app_id from bundle.js");
 
         _logger.LogInformation("Got app_id: {AppId}", _appId);
         return _appId;
+    }
+
+    // app_id du lecteur web : dans sa configuration de production, sinon sous sa forme ancienne.
+    private static string? ExtractAppId(string bundleJs)
+    {
+        var match = Regex.Match(bundleJs, @"production:\{api:\{appId:""(\d+)"",appSecret:""(\w+)""");
+        if (!match.Success)
+            match = Regex.Match(bundleJs, @"app_id:\s*""(\d+)""");
+        return match.Success ? match.Groups[1].Value : null;
+    }
+
+    /// <summary>
+    /// Clés de la connexion Qobuz (OAuth) du lecteur web : son app_id, que la page de connexion de
+    /// Qobuz attend en <c>ext_app_id</c>, et la clé privée qui échange le code de retour contre un
+    /// jeton. Relues à chaque connexion parce que la clé change avec les versions du lecteur. Ne
+    /// touche pas à l'état du service : une connexion lancée puis abandonnée ne doit rien changer.
+    /// </summary>
+    public async Task<(string AppId, string PrivateKey)> GetOAuthKeysAsync()
+    {
+        var bundleJs = await FetchBundleJsAsync();
+
+        var appId = ExtractAppId(bundleJs)
+            ?? throw new Exception("Could not extract app_id from bundle.js");
+
+        // Le bundle contient d'autres « privateKey » (clé RSA de WebCrypto) : seule la forme
+        // privateKey:"<alphanumérique>" est celle de l'échange OAuth. Jamais journalisée.
+        var keyMatch = Regex.Match(bundleJs, @"privateKey:\s*""(?<key>[A-Za-z0-9]{6,30})""");
+        if (!keyMatch.Success)
+            throw new Exception("Could not extract the OAuth private key from bundle.js");
+
+        return (appId, keyMatch.Groups["key"].Value);
     }
 
     public async Task<string> GetAppSecretAsync(string appId, string userAuthToken)
@@ -240,48 +261,46 @@ public class QobuzApiService
 
     // ─── Authentication ───
 
-    public async Task<QobuzLoginResponse> LoginWithEmailAsync(string appId, string email, string password)
+    /// <summary>
+    /// Échange le code de retour de la connexion Qobuz (<c>code_autorisation</c>) contre un jeton,
+    /// comme le fait le lecteur web : GET oauth/callback avec ce code et la clé privée lue dans son
+    /// bundle. Le jeton obtenu vaut, pour cet app_id, un jeton collé à la main. Ne touche pas à
+    /// l'état du service : c'est l'enregistrement de la connexion qui l'adopte.
+    /// </summary>
+    /// <remarks>
+    /// La connexion par e-mail et mot de passe (user/login) a disparu : depuis avril 2026 environ,
+    /// Qobuz la refuse aux applications tierces, identifiants justes ou non (401 « User
+    /// authentication is required. »).
+    /// </remarks>
+    public async Task<string> ExchangeOAuthCodeAsync(string appId, string privateKey, string code, CancellationToken ct = default)
     {
-        _appId = appId;
+        // Cette URL porte le code et la clé privée : ni elle ni eux ne sont journalisés ni repris
+        // dans une exception.
+        var url = $"{BaseUrl}oauth/callback?code={Uri.EscapeDataString(code)}&private_key={Uri.EscapeDataString(privateKey)}&app_id={appId}";
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
+        // Sur la requête et non sur le client partagé : l'app_id en service ne doit changer qu'une
+        // fois la connexion enregistrée.
+        request.Headers.Add("X-App-Id", appId);
+        using var response = await _http.SendAsync(request, ct);
+        var json = await response.Content.ReadAsStringAsync(ct);
 
-        // Ensure X-App-Id header is set (may have been cleared by logout)
-        _http.DefaultRequestHeaders.Remove("X-App-Id");
-        _http.DefaultRequestHeaders.Add("X-App-Id", appId);
-
-        // Mot de passe sous forme d'empreinte MD5 hexadécimale, comme chez les clients de référence
-        // (QobuzDownloaderX, qobuz-dl, streamrip). Cette URL porte l'e-mail et cette empreinte : ni
-        // elle ni eux ne sont jamais journalisés ni repris dans une exception.
-        //
-        // Depuis avril 2026 environ, Qobuz refuse ce point d'entrée aux applications tierces : 401
-        // « User authentication is required. », que les identifiants soient justes ou non. Il reste
-        // en place pour le cas où Qobuz le rouvrirait ; la page de connexion oriente vers le jeton.
-        var url = $"{BaseUrl}user/login?app_id={appId}&email={Uri.EscapeDataString(email)}&password={ComputeMD5(password)}";
-        using var http = await _http.GetAsync(url);
-        var response = await http.Content.ReadAsStringAsync();
-
-        if (!http.IsSuccessStatusCode)
+        if (!response.IsSuccessStatusCode)
         {
-            // Code et message de Qobuz seulement, jamais le corps brut : rien ne garantit qu'il ne
-            // reprenne pas l'e-mail, retiré du message par précaution.
-            var error = ParseApiError(response);
-            var message = error?.Message;
-            if (message != null && email.Length > 0)
-                message = message.Replace(email, "<e-mail>", StringComparison.OrdinalIgnoreCase);
-            _logger.LogWarning("Qobuz refused user/login (HTTP {Status}): code {Code}, {Message}",
-                (int)http.StatusCode, error?.Code, message);
-            // Le code HTTP porté par l'exception permet à la page de connexion de distinguer un refus
-            // de Qobuz d'une panne réseau (IsNetworkFailure).
-            throw new HttpRequestException($"user/login failed ({(int)http.StatusCode}): {message}", null, http.StatusCode);
+            // Code et message de Qobuz seulement, jamais le corps brut.
+            var error = ParseApiError(json);
+            _logger.LogWarning("Qobuz refused oauth/callback (HTTP {Status}): code {Code}, {Message}",
+                (int)response.StatusCode, error?.Code, error?.Message);
+            // Le code HTTP porté par l'exception distingue un refus de Qobuz d'une panne réseau.
+            throw new HttpRequestException($"oauth/callback failed ({(int)response.StatusCode}): {error?.Message}", null, response.StatusCode);
         }
 
-        var result = JsonConvert.DeserializeObject<QobuzLoginResponse>(response)
-            ?? throw new Exception("Login failed: empty response");
+        string? token = null;
+        try { token = JsonConvert.DeserializeObject<OAuthCallbackResponse>(json)?.Token; }
+        catch (JsonException) { }
 
-        _userAuthToken = result.UserAuthToken
-            ?? throw new Exception("Login failed: no auth token");
-
-        _logger.LogInformation("Logged in as {Name}", result.User?.DisplayName);
-        return result;
+        return string.IsNullOrEmpty(token)
+            ? throw new Exception("oauth/callback returned no token")
+            : token;
     }
 
     public async Task<QobuzLoginResponse> LoginWithTokenAsync(string appId, string token)
@@ -314,6 +333,9 @@ public class QobuzApiService
         var url = $"{BaseUrl}user/get?app_id={appId}";
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Add("X-User-Auth-Token", token);
+        // Sur la requête : la connexion Qobuz (OAuth) valide son jeton avant que l'app_id ne soit
+        // posé sur le client partagé. Il prime alors sur celui du client, qui n'est pas dupliqué.
+        request.Headers.Add("X-App-Id", appId);
         var response = await _http.SendAsync(request, ct);
         var json = await response.Content.ReadAsStringAsync(ct);
 
@@ -514,6 +536,11 @@ public class QobuzApiService
     {
         [JsonProperty("code")] public int? Code { get; set; }
         [JsonProperty("message")] public string? Message { get; set; }
+    }
+
+    private sealed class OAuthCallbackResponse
+    {
+        [JsonProperty("token")] public string? Token { get; set; }
     }
 
     private static string ComputeMD5(string input)

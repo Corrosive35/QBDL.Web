@@ -142,17 +142,22 @@ you create inherits those settings. A copy of the previous configuration is kept
 ### Login
 
 Only an administrator can connect or disconnect the Qobuz account, which every user then shares.
-Until it is connected, other users see a waiting message. You can authenticate with:
+Until it is connected, other users see a waiting message. You can connect with:
 
-- **Email + Password** — Your Qobuz account credentials
-- **Token** — Use an existing user auth token
+- **Sign in with Qobuz** — Opens the Qobuz sign-in page; you sign in there and come back connected.
+  QBDL never sees your password. Qobuz sends the browser back to the address QBDL is opened with,
+  so there is nothing to configure. In the Android app, the page opens in the phone's browser.
+- **Token** — Paste an existing user auth token, under *Sign in with token*
 
-The app automatically retrieves the required `app_id` and `app_secret` from the Qobuz web player. You can also provide custom values under *Custom App ID / Secret*.
+Qobuz no longer accepts email and password sign-in from third-party apps, so that option is gone.
+
+The app automatically retrieves the required `app_id` and `app_secret` from the Qobuz web player.
+For a token, you can also provide custom values under *Custom App ID / Secret*.
 
 A token is only accepted with the `app_id` it was issued for. If Qobuz rejects it — invalid, expired
-or issued for another application, the response does not tell which — sign in with email, copy a
-token from play.qobuz.com, or enter the App ID and App Secret of the application that issued it
-under *Custom App ID / Secret*. Login failures are logged as warnings (`docker logs`), never with
+or issued for another application, the response does not tell which — use *Sign in with Qobuz*,
+copy a token from play.qobuz.com, or enter the App ID and App Secret of the application that issued
+it under *Custom App ID / Secret*. Login failures are logged as warnings (`docker logs`), never with
 the token, secret or password.
 
 ### Quality
@@ -339,6 +344,7 @@ QBDL.Web/
 │   └── QobuzModels.cs       # Qobuz API response models
 ├── Services/
 │   ├── QobuzApiService.cs   # Qobuz API client
+│   ├── QobuzSignInService.cs # Qobuz account connection (Sign in with Qobuz, token)
 │   ├── DownloadService.cs   # Core download engine, one queue per user
 │   ├── SettingsService.cs   # settings.json
 │   ├── UserStore.cs         # users.json, account rules, upgrade from 1.6

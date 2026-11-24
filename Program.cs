@@ -47,6 +47,9 @@ builder.Services.AddServerSideBlazor(options =>
 builder.Services.AddSingleton<SettingsService>();
 builder.Services.AddSingleton<UserStore>();
 builder.Services.AddSingleton<QobuzApiService>();
+// Singleton : les connexions Qobuz en cours (state) doivent survivre au passage du WebView ou de
+// l'onglet qui les a lancées vers le navigateur qui revient de qobuz.com.
+builder.Services.AddSingleton<QobuzSignInService>();
 builder.Services.AddSingleton<TemplateService>();
 builder.Services.AddSingleton<TaggingService>();
 builder.Services.AddSingleton<DownloadService>();
@@ -307,6 +310,27 @@ app.MapPost("/culture", async (HttpContext ctx, UserStore users) =>
     return Results.Redirect(returnUrl);
 });
 
+// Retour de la connexion Qobuz : qobuz.com y renvoie le navigateur avec le state posé au départ et
+// le code à échanger (code_autorisation, nom choisi par Qobuz). Route publique, sans cookie : dans
+// l'application Android, ce retour arrive dans le navigateur externe. C'est le state qui l'autorise
+// (QobuzSignInService). L'écran de verrouillage ne concerne que les pages Blazor : aucune route
+// minimale n'a besoin d'en être exemptée.
+app.MapGet(QobuzSignInService.CallbackPath, async (HttpContext ctx, QobuzSignInService signIn, LocalizationService loc) =>
+{
+    var query = ctx.Request.Query;
+    var code = query["code_autorisation"].ToString();
+    if (string.IsNullOrEmpty(code))
+        code = query["code"].ToString();
+
+    var outcome = await signIn.CompleteAsync(query["state"].ToString(), code);
+
+    // L'adresse de cette page porte le state et le code. Consommés, ils restent inutiles à
+    // divulguer : ni cache, ni Referer vers la page suivante.
+    ctx.Response.Headers.CacheControl = "no-store";
+    ctx.Response.Headers["Referrer-Policy"] = "no-referrer";
+    return Results.Content(QobuzSignInPage(loc, outcome), "text/html; charset=utf-8");
+});
+
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
@@ -345,6 +369,56 @@ static void AdoptRequestLanguage(HttpContext ctx, UserStore users, UserAccount u
     }
 
     LocalizationService.WriteCookie(ctx.Response, user.UiLanguage, ctx.Request.IsHttps);
+}
+
+// Page de retour de la connexion Qobuz. Autonome, sans circuit Blazor, puisqu'elle s'ouvre souvent
+// dans un navigateur externe ; habillée comme l'écran de connexion. Sa langue est celle de la
+// requête (cookie qbdlx_lang ou navigateur), fixée par le middleware de localisation.
+static string QobuzSignInPage(LocalizationService loc, QobuzSignInService.Outcome outcome)
+{
+    var connected = outcome == QobuzSignInService.Outcome.Connected;
+    var message = outcome switch
+    {
+        QobuzSignInService.Outcome.Connected => loc["qobuzSignIn.connected"],
+        QobuzSignInService.Outcome.InvalidState => loc["qobuzSignIn.error.state"],
+        QobuzSignInService.Outcome.NotAdmin => loc["qobuzSignIn.error.notAdmin"],
+        QobuzSignInService.Outcome.Unreachable => loc["qobuzSignIn.error.network"],
+        QobuzSignInService.Outcome.AppCredentials => loc["qobuzSignIn.error.appCredentials"],
+        _ => loc["qobuzSignIn.error.refused"],
+    };
+    static string E(string text) => System.Net.WebUtility.HtmlEncode(text);
+
+    var notice = connected
+        ? $"<div class=\"form-success\" role=\"status\">{E(message)}</div>"
+        : $"<div class=\"auth-error\" role=\"alert\">{E(message)}</div>";
+
+    return $"""
+        <!DOCTYPE html>
+        <html lang="{loc.Current}">
+        <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+            <meta name="referrer" content="no-referrer" />
+            <title>{E(loc["qobuzSignIn.title"])} · QBDL</title>
+            <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+            <link rel="stylesheet" href="/css/app.css" />
+        </head>
+        <body>
+            <div class="auth-shell">
+                <div class="auth-card">
+                    <div class="card">
+                        <div class="auth-head">
+                            <h2 class="auth-logo">QBDL</h2>
+                            <p class="auth-subtitle">{E(loc["qobuzSignIn.title"])}</p>
+                        </div>
+                        {notice}
+                        <a class="btn btn-primary" href="/" style="width:100%;text-decoration:none;">{E(loc["qobuzSignIn.open"])}</a>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        """;
 }
 
 // Le formulaire renvoie la page d'où venait l'utilisateur ; ne garder qu'un chemin local ferme

@@ -7,13 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed
-- **Connexion Qobuz par e-mail** : Qobuz la refuse désormais aux applications tierces, même avec
-  un e-mail et un mot de passe corrects (depuis avril 2026 environ). Au lieu d'« Identifiants
-  invalides », la page de connexion l'explique et oriente vers la connexion par jeton ; le journal
-  du serveur reprend le code et le message de refus de Qobuz. Le mot de passe part désormais sous
-  forme d'empreinte MD5, comme chez les autres clients Qobuz, et non plus en clair. Le message d'un
-  jeton refusé ne propose plus la connexion par e-mail.
+### Added
+- **« Se connecter avec Qobuz »** : l'administrateur se connecte sur la page de Qobuz, comme dans
+  le lecteur web, puis revient dans QBDL avec le compte connecté. QBDL ne voit jamais le mot de
+  passe. Dans l'application Android, cette page s'ouvre dans le navigateur du téléphone ; la page
+  de connexion restée ouverte dans l'application se recharge quand la connexion aboutit. Le retour
+  arrive sur une nouvelle adresse, `/auth/qobuz/callback`, valable une seule fois et dix minutes.
+  Aucune adresse n'est à configurer : c'est celle par laquelle QBDL est ouvert. La connexion par
+  jeton reste disponible en dessous.
+
+### Changed
+- **Fin de la connexion par e-mail et mot de passe** : Qobuz la refuse aux applications tierces
+  depuis avril 2026 environ, même avec des identifiants corrects, et la page affichait
+  « Identifiants invalides ». « Se connecter avec Qobuz » la remplace. L'e-mail enregistré par une
+  version précédente est effacé à la connexion suivante. Un refus de Qobuz est journalisé avec son
+  code et son message, sans jamais le code de retour ni le jeton.
 
 ## [1.9.0] - 2026-11-23
 

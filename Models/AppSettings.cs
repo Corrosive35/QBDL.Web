@@ -14,6 +14,9 @@ public class AppSettings
     public string UiLanguage { get; set; } = "";
 
     // Auth
+    // Restes de la connexion par e-mail et mot de passe, que Qobuz refuse aux applications tierces
+    // depuis avril 2026 environ : plus lus. Gardés pour ne rien renommer ni supprimer dans
+    // settings.json ; Email est vidé à la connexion suivante (QobuzSignInService.Apply).
     public string Email { get; set; } = "";
     public string Password { get; set; } = "";
     public string UserAuthToken { get; set; } = "";
