@@ -1636,109 +1636,192 @@ select {
 .auth-card .btn-primary { min-height: 52px; font-size: 15px; }
 .auth-more { cursor: pointer; font-size: 14px; color: var(--t2-texte-2); min-height: var(--t2-cible); display: flex; align-items: center; }
 
-/* Connexion du compte Qobuz (Login.razor) : deux cadres, la connexion Qobuz recommandée, plus large,
-   et le jeton en secours. Côte à côte au bureau, empilés sous 768px (bloc responsive). Habillage de
-   l'écran de connexion : verre, libellés en capitales, champs et boutons en pilule. */
+/* Connexion du compte Qobuz (Login.razor, vue administrateur) : planches t2-b8 (bureau) et t2-m5
+   (mobile), validées telles quelles. Disposition et libellés des planches, habillage d'app.css
+   (Space Grotesk, jetons T2). qc-desk et qc-mob marquent ce qui n'existe qu'à une largeur ; la
+   bascule se fait à 768px, comme pour le reste de l'application. */
+@media (min-width: 769px) { .qobuz-connect .qc-mob { display: none; } }
+@media (max-width: 768px) { .qobuz-connect .qc-desk { display: none; } }
+
+/* La page dessine son propre pied (déconnexion, langue, version) : celui de MainLayout s'efface,
+   ici seulement. */
+.auth-shell:has(> .qobuz-connect) > :is(.auth-logout, .lang-switch) { display: none; }
+
 .qobuz-connect {
+    flex: 1 0 auto;
     width: 100%;
-    max-width: 1040px;
-    margin: 0 auto;
-    padding: 0 16px;
+    max-width: 1112px;   /* 1064px de contenu, comme la planche, plus les marges */
+    display: flex;
+    flex-direction: column;
+    padding: 24px 24px 8px;
 }
 
-.qobuz-connect .auth-head { margin-bottom: 24px; }
-
-.qobuz-connect-title {
-    margin-top: 14px;
-    font: 600 var(--t2-taille-section)/1.25 var(--t2-titre);
-    color: var(--t2-texte);
+.qc-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
 }
 
-.qobuz-login-form {
+.qc-logo { font: 600 30px/1 var(--t2-titre); letter-spacing: -.03em; color: var(--t2-texte); }
+
+.qc-title {
+    margin-top: 18px;
+    font: 600 var(--t2-taille-page)/1.1 var(--t2-titre);
+    letter-spacing: -.02em;
+}
+
+.qc-lead { margin-top: 8px; font-size: 15px; line-height: 1.5; color: var(--t2-texte-2); }
+
+.qobuz-connect .qobuz-login-form {
+    margin-top: 22px;
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-    gap: 20px;
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    gap: 24px;
     align-items: start;
 }
 
-.qobuz-connect .card { padding: 28px 24px; margin-bottom: 0; }
-
-.qobuz-login-heading {
-    margin-bottom: 12px;
-    font: 600 var(--t2-taille-section)/1.25 var(--t2-titre);
-    color: var(--t2-texte);
+/* Deux cadres de poids inégaux : le principal en verre fort et bouton blanc, le repli en verre léger
+   cerclé d'un filet et bouton de verre. La hiérarchie tient à la matière et à la largeur. */
+.qc-cadre {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-width: 0;
+    padding: 30px 32px 32px;
+    border-radius: 28px;
 }
 
-.qobuz-login-text {
-    margin-bottom: 18px;
-    font-size: var(--t2-taille-texte);
-    line-height: 1.5;
+.qc-principal {
+    background: var(--t2-verre-fort);
+    -webkit-backdrop-filter: blur(var(--t2-verre-flou)) saturate(1.4);
+    backdrop-filter: blur(var(--t2-verre-flou)) saturate(1.4);
+    box-shadow: var(--t2-reflet), 0 40px 80px -30px rgba(0, 0, 0, .9);
+}
+
+.qc-repli { background: rgba(255, 255, 255, .05); box-shadow: inset 0 0 0 1px var(--t2-filet); }
+
+.qc-cap {
+    font: 600 var(--t2-taille-cap)/1 var(--t2-texte-police);
+    letter-spacing: .16em;
+    text-transform: uppercase;
     color: var(--t2-texte-2);
 }
 
-/* Les trois étapes, au bureau seulement : en verre dans le verre, comme les lignes de comptes. */
-.qobuz-login-steps {
+.qc-cadre-titre { font: 600 26px/1.1 var(--t2-titre); letter-spacing: -.02em; }
+.qc-repli .qc-cadre-titre { font-size: 22px; }
+
+.qc-txt { font-size: 15px; font-weight: 500; line-height: 1.5; }
+
+.qc-etapes {
     list-style: none;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
-    margin-bottom: 18px;
 }
 
-.qobuz-login-steps li {
+.qc-etapes li {
     display: flex;
     flex-direction: column;
     gap: 10px;
     padding: 14px;
     border-radius: 18px;
-    background: var(--t2-verre);
-    box-shadow: var(--t2-reflet);
-    font-size: var(--t2-taille-2);
-    line-height: 1.4;
-    color: var(--t2-texte-2);
+    background: rgba(8, 9, 14, .32);
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.35;
 }
 
-.qobuz-login-step-num {
-    display: inline-flex;
+.qc-etapes b {
+    display: flex;
     align-items: center;
     justify-content: center;
-    width: 26px;
-    height: 26px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     box-shadow: inset 0 0 0 1.5px var(--t2-texte);
-    font-size: 12px;
+    font: 600 13px/1 var(--t2-titre);
+}
+
+.qc-go { width: 100%; }
+.qc-principal .qc-go { min-height: 56px; font-size: 16px; }
+.qc-repli .qc-go { min-height: var(--t2-cible); }
+
+/* Aides : au bureau, la première centrée sans icône et la seconde sous un filet ; le groupe
+   s'efface pour que chacune prenne l'espacement du cadre. Regroupées sur mobile. */
+.qc-aides { display: contents; }
+.qc-aide { font-size: 13.5px; line-height: 1.5; color: var(--t2-texte-2); }
+.qc-aide svg { flex: none; margin-top: 2px; }
+.qc-aide-mdp { text-align: center; }
+
+.qc-aide-compte {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding-top: 14px;
+    border-top: 1px solid var(--t2-filet);
+}
+
+.qc-aide-jeton { margin-top: -8px; }
+
+/* Erreur d'un cadre : contour blanc plein et icône d'alerte, la forme porte le sens. */
+.qc-erreur {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: var(--t2-verre);
+    box-shadow: inset 0 0 0 1.5px var(--t2-texte);
+    font-size: 13.5px;
     font-weight: 600;
+    line-height: 1.5;
     color: var(--t2-texte);
 }
 
-.qobuz-login-go { width: 100%; }
-.qobuz-connect .btn-primary { min-height: 52px; font-size: 15px; }
-.qobuz-connect .btn-secondary { min-height: var(--t2-cible); }
+.qc-erreur svg { flex: none; margin-top: 2px; }
 
-.qobuz-login-note {
-    margin-top: 12px;
-    font-size: var(--t2-taille-2);
-    line-height: 1.45;
+.qc-lab {
+    display: block;
+    margin-bottom: 9px;
+    font: 600 11px/1 var(--t2-texte-police);
+    letter-spacing: .16em;
+    text-transform: uppercase;
     color: var(--t2-texte-2);
-    text-align: center;
 }
 
-/* Changer de compte : à part, sous un filet. */
-.qobuz-login-switch {
-    margin-top: 16px;
-    padding-top: 14px;
+.qobuz-connect input { min-height: 48px; }
+.qobuz-connect input[aria-invalid="true"] { box-shadow: inset 0 0 0 1.5px var(--t2-texte); }
+
+.qc-depli summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 48px;
+    padding: 0 4px;
     border-top: 1px solid var(--t2-filet);
-    text-align: left;
+    font-size: 14px;
+    font-weight: 600;
+    list-style: none;
+    cursor: pointer;
 }
 
-/* Sous le champ jeton (.form-group le suit de 14px) et avant le bouton. */
-.qobuz-login-help { margin-top: -4px; margin-bottom: 16px; text-align: left; }
+.qc-depli summary::-webkit-details-marker { display: none; }
+.qc-depli[open] summary svg { transform: rotate(180deg); }
+.qc-depli-corps { display: flex; flex-direction: column; gap: 14px; padding-top: 6px; }
 
-.qobuz-login-custom { margin-top: 18px; border-top: 1px solid var(--t2-filet); }
-.qobuz-login-custom-body { padding-top: 8px; }
+.qc-pied {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: auto;
+    padding-top: 28px;
+}
 
-/* « Ou, en secours » : séparateur des cadres empilés, mobile seulement. */
-.qobuz-login-or { display: none; }
+.qc-pied .btn { min-height: var(--t2-cible); }
+.qc-pied-droite { display: flex; align-items: center; gap: 18px; }
+.qc-version { font-size: 11px; }
 
 /* Toast notification */
 .toast-notification {
@@ -1866,31 +1949,84 @@ select {
 
     .sort-select { font-size: 14px; }
 
-    /* Connexion du compte Qobuz : cadres empilés, Qobuz d'abord. Les étapes laissent la place à la
-       phrase d'explication, et « Ou, en secours » remplace le surtitre du cadre jeton. */
-    .qobuz-connect { max-width: 480px; }
-    .qobuz-login-form { grid-template-columns: minmax(0, 1fr); gap: 0; }
-    .qobuz-connect .card { padding: 22px 18px; }
-    .qobuz-login-steps,
-    .qobuz-login-token > .card-title { display: none; }
+    /* Connexion du compte Qobuz, planche t2-m5 : QBDL en grand, cadres empilés séparés par « Ou, en
+       secours », aides avec icône, pied en pilules. */
+    .qobuz-connect { max-width: 520px; padding: 40px 18px 10px; }
+    .qc-logo { font-size: 44px; line-height: .9; letter-spacing: -.04em; }
+    .qc-lead { margin-top: 12px; font-weight: 500; line-height: 1.4; }
 
-    .qobuz-login-or {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin: 18px 4px;
-        font: 600 var(--t2-taille-cap)/1.2 var(--t2-texte-police);
-        letter-spacing: .16em;
-        text-transform: uppercase;
-        color: var(--t2-texte-2);
+    .qobuz-connect .qobuz-login-form { margin-top: 28px; grid-template-columns: minmax(0, 1fr); gap: 0; }
+
+    .qc-cadre { gap: 14px; padding: 22px 18px 20px; border-radius: var(--t2-rayon-carte); }
+    .qc-principal { box-shadow: var(--t2-reflet); }
+
+    .qc-repli {
+        background: var(--t2-verre);
+        -webkit-backdrop-filter: blur(var(--t2-verre-flou)) saturate(1.4);
+        backdrop-filter: blur(var(--t2-verre-flou)) saturate(1.4);
+        box-shadow: var(--t2-reflet);
     }
 
-    .qobuz-login-or::before,
-    .qobuz-login-or::after {
-        content: "";
-        flex: 1;
-        height: 1px;
-        background: var(--t2-filet);
+    .qc-cadre-titre { font-size: 21px; }
+    .qc-principal .qc-cadre-titre { margin-top: -4px; }
+    .qc-repli .qc-cadre-titre { font-size: 18px; }
+    .qc-txt { font-weight: 400; line-height: 1.45; }
+    .qc-principal .qc-go { min-height: 52px; font-size: 15px; }
+
+    .qc-aides { display: flex; flex-direction: column; gap: 8px; }
+
+    .qc-aide {
+        display: grid;
+        grid-template-columns: 16px minmax(0, 1fr);
+        column-gap: 10px;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
+    .qc-aide-mdp { text-align: left; }
+    .qc-aide-compte { padding-top: 0; border-top: none; }
+
+    .qc-erreur {
+        display: grid;
+        grid-template-columns: 16px minmax(0, 1fr);
+        column-gap: 10px;
+        padding: 12px 14px;
+        border-radius: 18px;
+        background: rgba(8, 9, 14, .35);
+        font-size: 13px;
+        font-weight: 500;
+        line-height: 1.45;
+    }
+
+    .qc-ou { display: flex; align-items: center; gap: 12px; margin: 22px 4px 14px; }
+    .qc-ou > span:not(.qc-cap) { flex: 1; height: 1px; background: var(--t2-filet); }
+
+    .qc-depli { padding-top: 4px; border-top: 1px solid var(--t2-filet); }
+    .qc-depli summary { min-height: var(--t2-cible); padding: 0; border-top: none; color: var(--t2-texte-2); }
+
+    /* Langue en pilule : le composant partagé (LanguageSwitch), habillé ici seulement. */
+    .qc-pied .lang-switch {
+        gap: 0;
+        padding: 3px;
+        border-radius: 22px;
+        background: var(--t2-verre);
+        box-shadow: var(--t2-reflet);
+    }
+
+    .qc-pied .lang-switch-sep { display: none; }
+
+    .qc-pied .lang-switch button {
+        min-height: 38px;
+        height: 38px;
+        padding: 0 14px;
+        border-radius: var(--t2-rayon-pilule);
+        color: var(--t2-texte);
+    }
+
+    .qc-pied .lang-switch button.active {
+        background: var(--t2-action);
+        color: var(--t2-action-texte);
+        text-decoration: none;
     }
 
 }

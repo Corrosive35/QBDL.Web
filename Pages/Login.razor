@@ -24,86 +24,120 @@
 }
 else
 {
-    @* Deux cadres : la connexion Qobuz, recommandée, et le jeton en secours. Côte à côte au bureau,
-       empilés sous 768 px (app.css, « Connexion Qobuz »). Chacun a son message d'erreur, en tête
-       sous son titre, comme l'erreur de l'écran de connexion. *@
+    @* Page des planches t2-b8 (bureau) et t2-m5 (mobile), validées telles quelles : disposition et
+       libellés des planches, habillage d'app.css (Space Grotesk, jetons T2). Les éléments propres à
+       une largeur portent qc-desk ou qc-mob (app.css, « Connexion du compte Qobuz ») ; la bascule se
+       fait à 768 px, comme partout. Le pied de page est celui de la page : app.css masque celui de
+       MainLayout ici seulement. *@
     <div class="qobuz-connect">
-        <div class="auth-head">
-            <h2 class="auth-logo">QBDL</h2>
-            <h1 class="qobuz-connect-title">@Loc["login.connectTitle"]</h1>
-            <p class="auth-subtitle">@Loc["login.connectLead"]</p>
-        </div>
+        <header class="qc-head">
+            <div>
+                <p class="qc-logo">QBDL</p>
+                <h1 class="qc-title qc-desk">@Loc["login.connectTitle"]</h1>
+                <p class="qc-lead qc-desk">@Loc["login.connectLead"]</p>
+                <p class="qc-lead qc-mob">@Loc["login.noAccountYet"]</p>
+            </div>
+            <span class="bdg run qc-desk">@Loc["users.role.admin"]</span>
+        </header>
 
         <div class="qobuz-login-form">
             @* Connexion Qobuz : sur la page de qobuz.com, qui revient ensuite sur
                /auth/qobuz/callback (QobuzSignInService). Elle remplace la connexion par e-mail et
                mot de passe, que Qobuz refuse aux applications tierces. *@
-            <div class="card qobuz-login-oauth">
-                <p class="card-title">@Loc["login.recommended"]</p>
-                <h2 class="qobuz-login-heading">@Loc["login.qobuz"]</h2>
-                @if (!string.IsNullOrEmpty(_oauthError))
-                {
-                    <div class="auth-error" role="alert">@_oauthError</div>
-                }
-                <p class="qobuz-login-text">@Loc["login.qobuzText"]</p>
-
-                @* Bureau seulement : sur mobile, la phrase ci-dessus suffit (app.css). *@
-                <ol class="qobuz-login-steps">
-                    <li><span class="qobuz-login-step-num" aria-hidden="true">1</span><span>@Loc["login.step1"]</span></li>
-                    <li><span class="qobuz-login-step-num" aria-hidden="true">2</span><span>@Loc["login.step2"]</span></li>
-                    <li><span class="qobuz-login-step-num" aria-hidden="true">3</span><span>@Loc["login.step3"]</span></li>
+            <section class="qc-cadre qc-principal qobuz-login-oauth" aria-labelledby="qc-titre-qobuz">
+                <span class="qc-cap">@Loc["login.recommended"]</span>
+                <h2 id="qc-titre-qobuz" class="qc-cadre-titre">@Loc["login.qobuz"]</h2>
+                <p class="qc-txt qc-desk">@Loc["login.qobuzText"]</p>
+                <p class="qc-txt qc-mob">@Loc["login.qobuzTextMobile"]</p>
+                <ol class="qc-etapes qc-desk" aria-label='@Loc["login.steps"]'>
+                    <li><b aria-hidden="true">1</b>@Loc["login.step1"]</li>
+                    <li><b aria-hidden="true">2</b>@Loc["login.step2"]</li>
+                    <li><b aria-hidden="true">3</b>@Loc["login.step3"]</li>
                 </ol>
 
-                <button class="btn btn-primary qobuz-login-go" @onclick="StartQobuzSignIn" disabled="@_loading">
-                    @(_loading ? Loc["login.submitting"] : Loc["login.qobuz"])
+                @* Erreur du cadre : juste au-dessus du bouton, comme sur les deux planches. *@
+                @if (!string.IsNullOrEmpty(_oauthError))
+                {
+                    <div class="qc-erreur" role="alert"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 17h.01"></path></svg><span>@_oauthError</span></div>
+                }
+                <button class="btn btn-primary qc-go" @onclick="StartQobuzSignIn" disabled="@_loading">
+                    @(_loading ? Loc["login.submitting"] : Loc["login.qobuz"])<svg class="qc-desk" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"></path></svg><svg class="qc-mob" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 5h5v5M19 5l-8 8M18 14v5H5V6h5"></path></svg>
                 </button>
-                <p class="qobuz-login-note">@Loc["login.qobuzHint"]</p>
-                @* qobuz.com redonne sans rien demander le compte déjà ouvert dans le navigateur, et
-                   aucun paramètre connu de sa page de connexion ne force la saisie : la page de retour
-                   nomme le compte, et cette phrase explique comment en changer. *@
-                <p class="qobuz-login-note qobuz-login-switch">@Loc["login.qobuzSwitch"]</p>
-            </div>
 
-            @* Mobile seulement, entre les cadres empilés : il y remplace le surtitre du jeton. *@
-            <div class="qobuz-login-or">@Loc["login.or"]</div>
+                @* Bureau : la première aide centrée sans icône, la seconde sous un filet. Mobile : les
+                   deux avec leur icône, groupées. qobuz.com redonne sans rien demander le compte déjà
+                   ouvert dans le navigateur, et aucun paramètre connu de sa page de connexion ne force
+                   la saisie : la page de retour nomme le compte, la seconde aide explique comment en
+                   changer. *@
+                <div class="qc-aides">
+                    <p class="qc-aide qc-aide-mdp"><svg class="qc-mob" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 018 0v3"></path></svg><span>@Loc["login.qobuzHint"]</span></p>
+                    <p class="qc-aide qc-aide-compte"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5h.01"></path></svg><span>@Loc["login.qobuzSwitch"]</span></p>
+                </div>
+            </section>
 
-            @* Repli : un jeton copié depuis play.qobuz.com, toujours visible. *@
-            <div class="card qobuz-login-token">
-                <p class="card-title">@Loc["login.fallback"]</p>
-                <h2 class="qobuz-login-heading">@Loc["login.tokenTitle"]</h2>
+            <div class="qc-ou qc-mob" aria-hidden="true"><span></span><span class="qc-cap">@Loc["login.or"]</span><span></span></div>
+
+            @* Repli : un jeton copié depuis play.qobuz.com, toujours visible. L'erreur se place en tête
+               au bureau, sous le champ sur mobile, comme dessiné : un seul des deux emplacements est
+               affiché à une largeur donnée. *@
+            <section class="qc-cadre qc-repli qobuz-login-token" aria-labelledby="qc-titre-jeton">
+                <span class="qc-cap qc-desk">@Loc["login.fallback"]</span>
+                <h2 id="qc-titre-jeton" class="qc-cadre-titre">@Loc["login.tokenTitle"]</h2>
                 @if (!string.IsNullOrEmpty(_tokenError))
                 {
-                    <div class="auth-error" role="alert">@_tokenError</div>
+                    <div class="qc-erreur qc-desk" role="alert"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 17h.01"></path></svg><span>@_tokenError</span></div>
                 }
 
-                <div class="form-group">
-                    <label for="qobuz-token">@Loc["login.token"]</label>
-                    <input id="qobuz-token" type="password" @bind="_token" placeholder='@Loc["login.tokenPlaceholder"]' />
+                <div>
+                    <label class="qc-lab" for="qc-jeton">@Loc["login.token"]</label>
+                    <input id="qc-jeton" type="password" @bind="_token" placeholder='@Loc["login.tokenPlaceholder"]'
+                           aria-invalid="@(string.IsNullOrEmpty(_tokenError) ? null : "true")" />
                 </div>
-                <p class="qobuz-login-note qobuz-login-help">@Loc["login.tokenHelp"]</p>
+                @if (!string.IsNullOrEmpty(_tokenError))
+                {
+                    <div class="qc-erreur qc-mob" role="alert"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 17h.01"></path></svg><span>@_tokenError</span></div>
+                }
+                <p class="qc-aide qc-aide-jeton qc-desk">@Loc["login.tokenHelp"]</p>
 
-                <button class="btn btn-secondary qobuz-login-go" @onclick="DoTokenLogin" disabled="@_loading">
+                <button class="btn btn-secondary qc-go" @onclick="DoTokenLogin" disabled="@_loading">
                     @(_loading ? Loc["login.submitting"] : Loc["login.tokenSubmit"])
                 </button>
+                <p class="qc-aide qc-mob"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5h.01"></path></svg><span>@Loc["login.tokenHelpMobile"]</span></p>
 
                 @* Pour un jeton émis par une autre application que le lecteur web. La connexion
                    Qobuz, elle, passe toujours par l'app_id du lecteur web, le seul dont la clé
                    d'échange est connue. *@
-                <details class="qobuz-login-custom">
-                    <summary class="auth-more">@Loc["login.customCredentials"]</summary>
-                    <div class="qobuz-login-custom-body">
-                        <div class="form-group">
-                            <label for="qobuz-app-id">@Loc["login.appId"]</label>
-                            <input id="qobuz-app-id" type="text" @bind="_customAppId" placeholder="App ID" />
+                <details class="qc-depli">
+                    <summary>@Loc["login.customCredentials"]<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"></path></svg></summary>
+                    <div class="qc-depli-corps">
+                        <div>
+                            <label class="qc-lab" for="qc-app-id">@Loc["login.appId"]</label>
+                            <input id="qc-app-id" type="text" @bind="_customAppId" placeholder="App ID" />
                         </div>
-                        <div class="form-group">
-                            <label for="qobuz-app-secret">@Loc["login.appSecret"]</label>
-                            <input id="qobuz-app-secret" type="password" @bind="_customAppSecret" placeholder="App Secret" />
+                        <div>
+                            <label class="qc-lab" for="qc-app-secret">@Loc["login.appSecret"]</label>
+                            <input id="qc-app-secret" type="password" @bind="_customAppSecret" placeholder="App Secret" />
                         </div>
                     </div>
                 </details>
-            </div>
+            </section>
         </div>
+
+        @* Pied de page des planches : déconnexion en contour au bureau, en verre sur mobile ; langue
+           en liens au bureau, en pilule sur mobile (même composant, habillé par la page) ; version
+           au bureau seulement. *@
+        <footer class="qc-pied">
+            <form method="post" action="/auth/lock" class="qc-desk">
+                <button type="submit" class="btn btn-outline">@Loc.T("nav.logoutAs", Guard.Account?.Username)</button>
+            </form>
+            <form method="post" action="/auth/lock" class="qc-mob">
+                <button type="submit" class="btn btn-secondary">@Loc.T("nav.logoutAs", Guard.Account?.Username)</button>
+            </form>
+            <div class="qc-pied-droite">
+                <LanguageSwitch />
+                <span class="qc-cap qc-version qc-desk">v@(AppInfo.Version)</span>
+            </div>
+        </footer>
     </div>
 }
 
