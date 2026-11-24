@@ -1055,12 +1055,14 @@ select {
 
 .artist-albums { padding: 8px 6px 24px; animation: slideDown .2s ease-out; }
 
-/* Sorting */
+/* Sorting. padding-right garde la place de la flèche dessinée par « select » (fond, entre 22 et 12px
+   du bord droit) : un raccourci « padding: 4px 14px » la ramenait à 14px, et la flèche passait sur
+   le texte dès que la valeur affichée était la plus longue de la liste (largeur auto). */
 .sort-select {
     width: auto;
     max-width: 100%;
     min-height: 36px;
-    padding: 4px 14px;
+    padding: 4px 36px 4px 14px;
     font-size: 13px;
     text-transform: none;
     letter-spacing: normal;

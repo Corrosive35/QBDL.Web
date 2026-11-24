@@ -23,6 +23,7 @@
   "lock.retrySeconds.one": "Too many attempts. Try again in {0} second.",
   "lock.retrySeconds.other": "Too many attempts. Try again in {0} seconds.",
   "lock.wrongPassword": "Incorrect password",
+  "lock.usernamePlaceholder": "username",
   "lock.passwordPlaceholder": "password",
   "lock.unlock": "SIGN IN",
 
@@ -31,6 +32,7 @@
   "auth.confirm": "Confirm password",
 
   "setup.subtitle": "First sign-in — create the administrator account",
+  "setup.confirmPlaceholder": "confirm password",
   "setup.create": "CREATE ACCOUNT",
   "setup.error.mismatch": "The two passwords do not match.",
   "setup.error.alreadyDone": "An administrator account already exists.",

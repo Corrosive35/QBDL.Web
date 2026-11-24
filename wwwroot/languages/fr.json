@@ -23,6 +23,7 @@
   "lock.retrySeconds.one": "Trop de tentatives. Réessayez dans {0} seconde.",
   "lock.retrySeconds.other": "Trop de tentatives. Réessayez dans {0} secondes.",
   "lock.wrongPassword": "Mot de passe incorrect",
+  "lock.usernamePlaceholder": "identifiant",
   "lock.passwordPlaceholder": "mot de passe",
   "lock.unlock": "SE CONNECTER",
 
@@ -31,6 +32,7 @@
   "auth.confirm": "Confirmation du mot de passe",
 
   "setup.subtitle": "Première connexion — créez le compte administrateur",
+  "setup.confirmPlaceholder": "confirmez le mot de passe",
   "setup.create": "CRÉER LE COMPTE",
   "setup.error.mismatch": "Les deux mots de passe ne correspondent pas.",
   "setup.error.alreadyDone": "Un compte administrateur existe déjà.",

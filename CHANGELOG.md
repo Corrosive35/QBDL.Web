@@ -27,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   version précédente est effacé à la connexion suivante. Un refus de Qobuz est journalisé avec son
   code et son message, sans jamais le code de retour ni le jeton.
 
+### Fixed
+- Textes indicatifs des champs : le champ identifiant de l'écran de connexion à QBDL n'en avait
+  pas, ni aucun champ de l'écran de création du premier administrateur (identifiant, mot de passe,
+  confirmation).
+- Recherche : la flèche des listes de tri ne chevauche plus le texte (« Pertinence » dans l'onglet
+  Artistes). Les quatre listes avaient perdu la place réservée à la flèche.
+
 ## [1.9.0] - 2026-11-23
 
 ### Added
