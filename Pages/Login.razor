@@ -24,11 +24,11 @@
 }
 else
 {
-    @* Page des planches t2-b8 (bureau) et t2-m5 (mobile), validées telles quelles : disposition et
-       libellés des planches, habillage d'app.css (Space Grotesk, jetons T2). Les éléments propres à
-       une largeur portent qc-desk ou qc-mob (app.css, « Connexion du compte Qobuz ») ; la bascule se
-       fait à 768 px, comme partout. Le pied de page est celui de la page : app.css masque celui de
-       MainLayout ici seulement. *@
+    @* Deux cadres côte à côte au-delà de 768 px, empilés en dessous, Qobuz d'abord : la connexion
+       Qobuz, recommandée, et le jeton en secours. Les éléments propres à une largeur portent qc-desk
+       ou qc-mob (app.css, « Connexion du compte Qobuz ») : texte d'explication, place de l'erreur du
+       jeton, icônes, bouton de déconnexion. Le pied de page est celui de la page : app.css masque
+       celui de MainLayout ici seulement. *@
     <div class="qobuz-connect">
         <header class="qc-head">
             <div>
@@ -55,7 +55,7 @@ else
                     <li><b aria-hidden="true">3</b>@Loc["login.step3"]</li>
                 </ol>
 
-                @* Erreur du cadre : juste au-dessus du bouton, comme sur les deux planches. *@
+                @* Erreur du cadre : juste au-dessus du bouton qu'elle concerne, aux deux largeurs. *@
                 @if (!string.IsNullOrEmpty(_oauthError))
                 {
                     <div class="qc-erreur" role="alert"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 17h.01"></path></svg><span>@_oauthError</span></div>
@@ -123,9 +123,9 @@ else
             </section>
         </div>
 
-        @* Pied de page des planches : déconnexion en contour au bureau, en verre sur mobile ; langue
-           en liens au bureau, en pilule sur mobile (même composant, habillé par la page) ; version
-           au bureau seulement. *@
+        @* Pied de page propre à la page : déconnexion en contour au bureau, en verre sur mobile ;
+           langue en liens au bureau, en pilule sur mobile (même composant, habillé par la page) ;
+           version au bureau seulement. *@
         <footer class="qc-pied">
             <form method="post" action="/auth/lock" class="qc-desk">
                 <button type="submit" class="btn btn-outline">@Loc.T("nav.logoutAs", Guard.Account?.Username)</button>

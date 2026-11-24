@@ -27,7 +27,7 @@
     unicode-range: U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF;
 }
 
-/* Jetons T2 : mêmes noms et valeurs que les maquettes (t2.css), ne pas les renommer. */
+/* Jetons T2 : noms et valeurs du système graphique T2, ne pas les renommer. */
 :root {
     /* Fond et voile */
     --t2-nuit: #08090E;
@@ -883,7 +883,7 @@ select {
 
 .results-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
 
-/* Grille d'albums : carte « pochette nue, méta, capsule C1 », reprise des maquettes. */
+/* Grille d'albums : carte « pochette nue, méta, capsule C1 ». */
 .alb-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
@@ -1638,9 +1638,8 @@ select {
 .auth-card .btn-primary { min-height: 52px; font-size: 15px; }
 .auth-more { cursor: pointer; font-size: 14px; color: var(--t2-texte-2); min-height: var(--t2-cible); display: flex; align-items: center; }
 
-/* Connexion du compte Qobuz (Login.razor, vue administrateur) : planches t2-b8 (bureau) et t2-m5
-   (mobile), validées telles quelles. Disposition et libellés des planches, habillage d'app.css
-   (Space Grotesk, jetons T2). qc-desk et qc-mob marquent ce qui n'existe qu'à une largeur ; la
+/* Connexion du compte Qobuz (Login.razor, vue administrateur) : deux cadres côte à côte au-delà
+   de 768px, empilés en dessous. qc-desk et qc-mob marquent ce qui n'existe qu'à une largeur ; la
    bascule se fait à 768px, comme pour le reste de l'application. */
 @media (min-width: 769px) { .qobuz-connect .qc-mob { display: none; } }
 @media (max-width: 768px) { .qobuz-connect .qc-desk { display: none; } }
@@ -1652,7 +1651,7 @@ select {
 .qobuz-connect {
     flex: 1 0 auto;
     width: 100%;
-    max-width: 1112px;   /* 1064px de contenu, comme la planche, plus les marges */
+    max-width: 1112px;   /* 1064px de contenu plus les marges : les deux cadres restent lisibles */
     display: flex;
     flex-direction: column;
     padding: 24px 24px 8px;
@@ -1951,7 +1950,7 @@ select {
 
     .sort-select { font-size: 14px; }
 
-    /* Connexion du compte Qobuz, planche t2-m5 : QBDL en grand, cadres empilés séparés par « Ou, en
+    /* Connexion du compte Qobuz sur mobile : QBDL en grand, cadres empilés séparés par « Ou, en
        secours », aides avec icône, pied en pilules. */
     .qobuz-connect { max-width: 520px; padding: 40px 18px 10px; }
     .qc-logo { font-size: 44px; line-height: .9; letter-spacing: -.04em; }
@@ -2034,7 +2033,7 @@ select {
 }
 
 @media (max-width: 640px) {
-    /* Deux colonnes de pochettes sur téléphone, comme les maquettes. */
+    /* Deux colonnes de pochettes sur téléphone. */
     .alb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 14px; }
 
     .search-tabs { gap: 22px; }
@@ -2228,7 +2227,7 @@ select {
     .reconnect-spinner { animation-duration: 2.4s; }
 }
 
-/* Grands écrans : la carte « En cours » prend l'ampleur des maquettes bureau. */
+/* Grands écrans : la carte « En cours » prend plus d'ampleur. */
 @media (min-width: 1200px) {
     .now-panel { --sortie: 260px; }
 }
