@@ -322,13 +322,13 @@ app.MapGet(QobuzSignInService.CallbackPath, async (HttpContext ctx, QobuzSignInS
     if (string.IsNullOrEmpty(code))
         code = query["code"].ToString();
 
-    var outcome = await signIn.CompleteAsync(query["state"].ToString(), code);
+    var result = await signIn.CompleteAsync(query["state"].ToString(), code);
 
     // L'adresse de cette page porte le state et le code. Consommés, ils restent inutiles à
     // divulguer : ni cache, ni Referer vers la page suivante.
     ctx.Response.Headers.CacheControl = "no-store";
     ctx.Response.Headers["Referrer-Policy"] = "no-referrer";
-    return Results.Content(QobuzSignInPage(loc, outcome), "text/html; charset=utf-8");
+    return Results.Content(QobuzSignInPage(loc, result), "text/html; charset=utf-8");
 });
 
 app.MapBlazorHub();
@@ -374,11 +374,15 @@ static void AdoptRequestLanguage(HttpContext ctx, UserStore users, UserAccount u
 // Page de retour de la connexion Qobuz. Autonome, sans circuit Blazor, puisqu'elle s'ouvre souvent
 // dans un navigateur externe ; habillée comme l'écran de connexion. Sa langue est celle de la
 // requête (cookie qbdlx_lang ou navigateur), fixée par le middleware de localisation.
-static string QobuzSignInPage(LocalizationService loc, QobuzSignInService.Outcome outcome)
+static string QobuzSignInPage(LocalizationService loc, QobuzSignInService.SignInResult result)
 {
-    var connected = outcome == QobuzSignInService.Outcome.Connected;
-    var message = outcome switch
+    var connected = result.Outcome == QobuzSignInService.Outcome.Connected;
+    var message = result.Outcome switch
     {
+        // Le nom du compte : qobuz.com redonne sans rien demander celui déjà ouvert dans le
+        // navigateur, et un changement de compte doit pouvoir se vérifier d'un coup d'œil.
+        QobuzSignInService.Outcome.Connected when !string.IsNullOrWhiteSpace(result.AccountName)
+            => loc.T("qobuzSignIn.connectedAs", result.AccountName),
         QobuzSignInService.Outcome.Connected => loc["qobuzSignIn.connected"],
         QobuzSignInService.Outcome.InvalidState => loc["qobuzSignIn.error.state"],
         QobuzSignInService.Outcome.NotAdmin => loc["qobuzSignIn.error.notAdmin"],

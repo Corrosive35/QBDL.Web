@@ -38,6 +38,10 @@
             @(_loading ? Loc["login.submitting"] : Loc["login.qobuz"])
         </button>
         <p class="auth-subtitle" style="text-align:center;">@Loc["login.qobuzHint"]</p>
+        @* qobuz.com redonne sans rien demander le compte déjà ouvert dans le navigateur, aucun
+           paramètre connu de la page de connexion ne force la saisie : la page de retour nomme le
+           compte, et cette phrase explique comment en changer. *@
+        <p class="auth-subtitle" style="text-align:center;">@Loc["login.qobuzSwitch"]</p>
 
         @* Repli : un jeton copié depuis play.qobuz.com. Ouvert d'emblée s'il a servi la dernière
            fois ; l'état ouvert ou fermé appartient ensuite au navigateur. *@

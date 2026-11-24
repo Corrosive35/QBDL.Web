@@ -66,6 +66,13 @@ public sealed class QobuzSignInService
     }
 
     /// <summary>
+    /// Issue du retour et, en cas de succès, nom d'affichage du compte connecté (jamais l'e-mail).
+    /// qobuz.com redonne sans rien demander le compte déjà ouvert dans le navigateur : le nom permet
+    /// de vérifier d'un coup d'œil qu'un changement de compte a bien eu lieu.
+    /// </summary>
+    public sealed record SignInResult(Outcome Outcome, string? AccountName = null);
+
+    /// <summary>
     /// Levé après chaque connexion enregistrée, quelle qu'en soit la voie. Une page de connexion
     /// restée ouverte s'en sert pour se recharger : celle du WebView, par exemple, pendant que le
     /// navigateur externe termine la connexion Qobuz.
@@ -153,14 +160,14 @@ public sealed class QobuzSignInService
     /// app_secret, puis le même enregistrement que la connexion par jeton (<see cref="Apply"/>).
     /// Ni le code, ni le state, ni la clé privée, ni le jeton ne sont journalisés.
     /// </summary>
-    public async Task<Outcome> CompleteAsync(string? state, string? code)
+    public async Task<SignInResult> CompleteAsync(string? state, string? code)
     {
         // Retiré avant toute vérification : un state ne sert qu'une fois, échec compris.
         if (string.IsNullOrEmpty(state) || !_pending.TryRemove(state, out var pending)
             || pending.ExpiresAt < DateTime.UtcNow)
         {
             _logger.LogWarning("Qobuz sign-in return rejected: unknown, expired or already used state");
-            return Outcome.InvalidState;
+            return new(Outcome.InvalidState);
         }
 
         // Rôle relu au retour : un compte rétrogradé ou supprimé entre-temps ne termine pas la
@@ -168,14 +175,14 @@ public sealed class QobuzSignInService
         if (_users.Find(pending.AdminId)?.IsAdmin != true)
         {
             _logger.LogWarning("Qobuz sign-in return rejected: the account that started it is no longer an administrator");
-            return Outcome.NotAdmin;
+            return new(Outcome.NotAdmin);
         }
 
         // Pas de code : connexion abandonnée ou refusée sur qobuz.com.
         if (string.IsNullOrEmpty(code))
         {
             _logger.LogWarning("Qobuz sign-in returned without an authorization code");
-            return Outcome.Refused;
+            return new(Outcome.Refused);
         }
 
         string token;
@@ -190,13 +197,13 @@ public sealed class QobuzSignInService
         catch (Exception ex) when (IsNetworkFailure(ex))
         {
             _logger.LogWarning("Qobuz sign-in failed, servers unreachable: {Type}: {Reason}", ex.GetType().Name, ex.Message);
-            return Outcome.Unreachable;
+            return new(Outcome.Unreachable);
         }
         catch (Exception ex)
         {
             // ex.Message : code et message de Qobuz, jamais le code de retour ni le jeton.
             _logger.LogWarning("Qobuz sign-in failed: {Type}: {Reason}", ex.GetType().Name, ex.Message);
-            return Outcome.Refused;
+            return new(Outcome.Refused);
         }
 
         string appSecret;
@@ -207,17 +214,17 @@ public sealed class QobuzSignInService
         catch (Exception ex) when (IsNetworkFailure(ex))
         {
             _logger.LogWarning("Qobuz sign-in failed, servers unreachable: {Type}: {Reason}", ex.GetType().Name, ex.Message);
-            return Outcome.Unreachable;
+            return new(Outcome.Unreachable);
         }
         catch (Exception ex)
         {
             _logger.LogWarning("Automatic app_secret resolution failed: {Type}: {Reason}", ex.GetType().Name, ex.Message);
-            return Outcome.AppCredentials;
+            return new(Outcome.AppCredentials);
         }
 
         Apply(pending.AppId, appSecret, new QobuzLoginResponse { UserAuthToken = token, User = user }, viaToken: false);
         _logger.LogInformation("Qobuz account connected through Qobuz sign-in");
-        return Outcome.Connected;
+        return new(Outcome.Connected, user?.DisplayName);
     }
 
     // Les connexions abandonnées ne s'accumulent pas : purgées à chaque nouveau départ.
