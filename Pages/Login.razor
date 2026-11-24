@@ -290,7 +290,8 @@
         }
         catch (HttpRequestException ex) when ((int?)ex.StatusCode is >= 400 and < 500)
         {
-            Logger.LogWarning("Qobuz rejected the token for app_id {AppId} (HTTP {Status})", appId, (int)ex.StatusCode!.Value);
+            // Sans l'app_id lui-même : aucun app_id ni app_secret dans les journaux.
+            Logger.LogWarning("Qobuz rejected the token for the current app_id (HTTP {Status})", (int)ex.StatusCode!.Value);
             _tokenError = Loc["login.error.tokenRejected"];
             return null;
         }

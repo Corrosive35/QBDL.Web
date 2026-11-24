@@ -56,7 +56,8 @@ public class QobuzApiService
         _appId = ExtractAppId(bundleJs)
             ?? throw new Exception("Could not extract app_id from bundle.js");
 
-        _logger.LogInformation("Got app_id: {AppId}", _appId);
+        // Trouvé, sans le citer : aucun app_id ni app_secret dans les journaux.
+        _logger.LogInformation("Got app_id from the Qobuz web player");
         return _appId;
     }
 
@@ -246,7 +247,12 @@ public class QobuzApiService
 
             var url = $"{BaseUrl}track/getFileUrl?request_ts={timestamp}&request_sig={sig}&track_id=197432204&format_id=5&intent=stream&app_id={appId}";
 
-            var resp = await _http.GetAsync(url);
+            // X-App-Id sur la requête : la connexion Qobuz (OAuth) cherche le secret avant que l'app_id
+            // ne soit posé sur le client partagé, absent sur une installation neuve et retiré par
+            // « Déconnecter Qobuz ». Sans lui, Qobuz pourrait refuser chaque candidat.
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Add("X-App-Id", appId);
+            using var resp = await _http.SendAsync(request);
 
             // A valid secret will NOT return 400 (Invalid Request Signature)
             // It may return 401/403 (auth issues) or 200 but NOT 400
