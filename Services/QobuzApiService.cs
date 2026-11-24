@@ -248,10 +248,32 @@ public class QobuzApiService
         _http.DefaultRequestHeaders.Remove("X-App-Id");
         _http.DefaultRequestHeaders.Add("X-App-Id", appId);
 
-        // Cette URL porte le mot de passe en clair : elle ne doit jamais être journalisée. Les messages
-        // d'HttpRequestException ne la reprennent pas (code et motif HTTP seulement).
-        var url = $"{BaseUrl}user/login?app_id={appId}&email={Uri.EscapeDataString(email)}&password={Uri.EscapeDataString(password)}";
-        var response = await _http.GetStringAsync(url);
+        // Mot de passe sous forme d'empreinte MD5 hexadécimale, comme chez les clients de référence
+        // (QobuzDownloaderX, qobuz-dl, streamrip). Cette URL porte l'e-mail et cette empreinte : ni
+        // elle ni eux ne sont jamais journalisés ni repris dans une exception.
+        //
+        // Depuis avril 2026 environ, Qobuz refuse ce point d'entrée aux applications tierces : 401
+        // « User authentication is required. », que les identifiants soient justes ou non. Il reste
+        // en place pour le cas où Qobuz le rouvrirait ; la page de connexion oriente vers le jeton.
+        var url = $"{BaseUrl}user/login?app_id={appId}&email={Uri.EscapeDataString(email)}&password={ComputeMD5(password)}";
+        using var http = await _http.GetAsync(url);
+        var response = await http.Content.ReadAsStringAsync();
+
+        if (!http.IsSuccessStatusCode)
+        {
+            // Code et message de Qobuz seulement, jamais le corps brut : rien ne garantit qu'il ne
+            // reprenne pas l'e-mail, retiré du message par précaution.
+            var error = ParseApiError(response);
+            var message = error?.Message;
+            if (message != null && email.Length > 0)
+                message = message.Replace(email, "<e-mail>", StringComparison.OrdinalIgnoreCase);
+            _logger.LogWarning("Qobuz refused user/login (HTTP {Status}): code {Code}, {Message}",
+                (int)http.StatusCode, error?.Code, message);
+            // Le code HTTP porté par l'exception permet à la page de connexion de distinguer un refus
+            // de Qobuz d'une panne réseau (IsNetworkFailure).
+            throw new HttpRequestException($"user/login failed ({(int)http.StatusCode}): {message}", null, http.StatusCode);
+        }
+
         var result = JsonConvert.DeserializeObject<QobuzLoginResponse>(response)
             ?? throw new Exception("Login failed: empty response");
 
@@ -478,6 +500,20 @@ public class QobuzApiService
         }
 
         return JsonConvert.DeserializeObject<T>(json);
+    }
+
+    // Réponse d'erreur de l'API : {"status":"error","code":401,"message":"…"}. Null si le corps n'est
+    // pas de ce format (page HTML d'une passerelle, corps vide…).
+    private static QobuzApiError? ParseApiError(string body)
+    {
+        try { return JsonConvert.DeserializeObject<QobuzApiError>(body); }
+        catch (JsonException) { return null; }
+    }
+
+    private sealed class QobuzApiError
+    {
+        [JsonProperty("code")] public int? Code { get; set; }
+        [JsonProperty("message")] public string? Message { get; set; }
     }
 
     private static string ComputeMD5(string input)

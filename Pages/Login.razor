@@ -178,7 +178,7 @@
             }
 
             _loginResult = await SignInAsync(appId);
-            if (_loginResult == null) return;   // jeton refusé : le message est déjà posé
+            if (_loginResult == null) return;   // refusé par Qobuz : le message est déjà posé
 
             string appSecret;
             try
@@ -238,7 +238,20 @@
     private async Task<Models.QobuzLoginResponse?> SignInAsync(string appId)
     {
         if (!_useToken)
-            return await Api.LoginWithEmailAsync(appId, _email, _password);
+        {
+            try
+            {
+                return await Api.LoginWithEmailAsync(appId, _email, _password);
+            }
+            catch (HttpRequestException ex) when ((int?)ex.StatusCode == 401)
+            {
+                // Qobuz ne répond plus que 401 à la connexion par e-mail des applications tierces,
+                // identifiants justes ou non : le message ne peut pas trancher et oriente vers le
+                // jeton. Le code et le message de Qobuz sont journalisés par LoginWithEmailAsync.
+                _error = Loc["login.error.emailRefused"];
+                return null;
+            }
+        }
 
         try
         {

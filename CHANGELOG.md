@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Connexion Qobuz par e-mail** : Qobuz la refuse désormais aux applications tierces, même avec
+  un e-mail et un mot de passe corrects (depuis avril 2026 environ). Au lieu d'« Identifiants
+  invalides », la page de connexion l'explique et oriente vers la connexion par jeton ; le journal
+  du serveur reprend le code et le message de refus de Qobuz. Le mot de passe part désormais sous
+  forme d'empreinte MD5, comme chez les autres clients Qobuz, et non plus en clair. Le message d'un
+  jeton refusé ne propose plus la connexion par e-mail.
+
 ## [1.9.0] - 2026-11-23
 
 ### Added
