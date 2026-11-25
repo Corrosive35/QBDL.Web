@@ -77,6 +77,10 @@
         (function () {
             var modal = document.getElementById('components-reconnect-modal');
             var LAST_RELOAD_KEY = 'qbdlx.lastReload';
+            // Connexion Qobuz lancée depuis cette page (horodatage) : elle se termine ailleurs, dans
+            // le navigateur du téléphone quand la page est dans l'application Android.
+            var QOBUZ_SIGNIN_KEY = 'qbdlx.qobuzSignIn';
+            var QOBUZ_SIGNIN_TTL = 15 * 60 * 1000; // au-delà des dix minutes de validité du state
 
             function isDown() {
                 return modal.classList.contains('components-reconnect-show')
@@ -99,6 +103,30 @@
                 location.reload();
             }
 
+            // Une page qui n'est plus l'écran de connexion Qobuz n'attend plus rien.
+            if (!document.querySelector('.qobuz-connect')) {
+                try { sessionStorage.removeItem(QOBUZ_SIGNIN_KEY); } catch (e) { }
+            }
+
+            // Appelé par Login.razor au clic sur « Se connecter avec Qobuz » : note la connexion en
+            // cours et renvoie le User-Agent, qui dit si la page est dans l'application Android.
+            window.qbdlxQobuzSignIn = function () {
+                try { sessionStorage.setItem(QOBUZ_SIGNIN_KEY, Date.now()); } catch (e) { }
+                return navigator.userAgent;
+            };
+
+            // Écrans qui attendent une connexion Qobuz faite ailleurs : l'attente des
+            // non-administrateurs, et l'écran de connexion Qobuz quand une connexion y a été
+            // lancée. Seulement dans ce cas pour ce dernier : un simple aller-retour d'onglet (pour
+            // copier un jeton, par exemple) ne doit pas effacer ce qui a été saisi.
+            function awaitsQobuz() {
+                if (document.querySelector('.auth-waiting')) return true;
+                if (!document.querySelector('.qobuz-connect')) return false;
+                var started = 0;
+                try { started = +(sessionStorage.getItem(QOBUZ_SIGNIN_KEY) || 0); } catch (e) { }
+                return started > 0 && Date.now() - started < QOBUZ_SIGNIN_TTL;
+            }
+
             new MutationObserver(function () { if (isDead()) reloadOnce(); })
                 .observe(modal, { attributes: true, attributeFilter: ['class'] });
 
@@ -107,6 +135,10 @@
             // Visibility API n'étant pas fiable dans un WebView mis en pause selon la version
             // de Chromium embarquée.
             window.qbdlxResume = function () {
+                // Circuit debout ou non : la navigation que le serveur envoie quand le compte se
+                // connecte a pu se perdre pendant la pause. Le rechargement fait entrer dans
+                // l'application si le compte est connecté, et redonne le même écran sinon.
+                if (awaitsQobuz()) { reloadOnce(); return; }
                 if (!isDown()) return;
                 if (window.Blazor && typeof Blazor.reconnect === 'function') {
                     Promise.resolve(Blazor.reconnect())

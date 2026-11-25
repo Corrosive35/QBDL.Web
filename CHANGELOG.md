@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Retour dans l'application Android après la connexion Qobuz** : une fois le compte connecté sur
+  qobuz.com, le navigateur du téléphone rouvre aussitôt l'application, et propose un bouton
+  « Revenir à l'application » si cette ouverture automatique est bloquée. Il faut l'application
+  1.3.0 ou suivante ; avec une version antérieure, la page invite à revenir dans l'application.
+
+### Fixed
+- Connexion Qobuz lancée depuis l'application Android : la page de retour proposait « Ouvrir
+  QBDL », qui menait à l'écran de connexion QBDL du navigateur du téléphone au lieu de
+  l'application.
+- De retour dans l'application Android après la connexion Qobuz, l'écran de connexion ne se
+  rechargeait pas, et il fallait toucher le bouton une seconde fois. Il se recharge désormais au
+  retour, comme l'écran d'attente des comptes non administrateurs.
+
 ## [1.10.0] - 2026-11-24
 
 ### Added

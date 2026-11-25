@@ -35,6 +35,18 @@ public sealed class QobuzSignInService
 
     private static readonly TimeSpan StateLifetime = TimeSpan.FromMinutes(10);
 
+    /// <summary>
+    /// Lien qui rouvre l'application Android et recharge son WebView, une fois la connexion
+    /// terminée dans le navigateur du téléphone (contrat avec QBDL.Remote, point 6). Le lien ne porte
+    /// rien : l'application ignore tout paramètre et relit simplement l'état du serveur.
+    /// </summary>
+    public const string AppReturnLink = "intent://signed-in#Intent;scheme=qbdlremote;package=com.qobuzdl.remote;end";
+
+    // Jetons du User-Agent du WebView de l'application Android : QobuzDLApp/<version> depuis
+    // toujours, QBDLReturn/1 quand elle sait se rouvrir sur AppReturnLink.
+    private const string AppUserAgentPrefix = "QobuzDLApp/";
+    private const string AppReturnToken = "QBDLReturn/1";
+
     private readonly QobuzApiService _api;
     private readonly SettingsService _settings;
     private readonly UserStore _users;
@@ -70,7 +82,14 @@ public sealed class QobuzSignInService
     /// qobuz.com redonne sans rien demander le compte déjà ouvert dans le navigateur : le nom permet
     /// de vérifier d'un coup d'œil qu'un changement de compte a bien eu lieu.
     /// </summary>
-    public sealed record SignInResult(Outcome Outcome, string? AccountName = null);
+    /// <remarks>
+    /// <c>FromApp</c> : la connexion a été lancée depuis l'application Android, et son retour
+    /// arrive donc dans le navigateur du téléphone, sans cookie d'accès. <c>AppCanReturn</c> :
+    /// cette application sait se rouvrir sur <see cref="AppReturnLink"/>. Tous deux restent à
+    /// false quand le state est inconnu : rien ne dit alors d'où venait la connexion.
+    /// </remarks>
+    public sealed record SignInResult(Outcome Outcome, string? AccountName = null,
+        bool FromApp = false, bool AppCanReturn = false);
 
     /// <summary>
     /// Levé après chaque connexion enregistrée, quelle qu'en soit la voie. Une page de connexion
@@ -131,12 +150,22 @@ public sealed class QobuzSignInService
     /// l'utilisateur sur son origine, sans réglage à remplir. Les en-têtes X-Forwarded-* ne sont
     /// pas lus, Program.cs explique pourquoi.
     /// </param>
-    public async Task<string> BeginAsync(string adminId, string baseUri)
+    /// <param name="userAgent">
+    /// User-Agent du navigateur qui lance la connexion (navigator.userAgent, lu au clic), ou vide.
+    /// Il dit si la connexion vient de l'application Android et si celle-ci sait se rouvrir.
+    /// </param>
+    public async Task<string> BeginAsync(string adminId, string baseUri, string? userAgent)
     {
         if (_users.Find(adminId)?.IsAdmin != true)
             throw new InvalidOperationException("Only an administrator can connect the Qobuz account");
 
         var (appId, privateKey) = await _api.GetOAuthKeysAsync();
+
+        // Jetons séparés par des espaces : une comparaison exacte, pour que QBDLReturn/10 ne
+        // passe pas pour QBDLReturn/1.
+        var tokens = (userAgent ?? "").Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var fromApp = tokens.Any(t => t.StartsWith(AppUserAgentPrefix, StringComparison.Ordinal));
+        var appCanReturn = fromApp && tokens.Contains(AppReturnToken, StringComparer.Ordinal);
 
         PurgeExpired();
         var state = WebEncoders.Base64UrlEncode(RandomNumberGenerator.GetBytes(32));
@@ -146,12 +175,15 @@ public sealed class QobuzSignInService
             AppId = appId,
             PrivateKey = privateKey,
             ExpiresAt = DateTime.UtcNow + StateLifetime,
+            FromApp = fromApp,
+            AppCanReturn = appCanReturn,
         };
 
         // Base64url : le state se glisse tel quel dans l'adresse de retour.
         var origin = new Uri(baseUri).GetLeftPart(UriPartial.Authority);
         var redirect = $"{origin}{CallbackPath}?state={state}";
-        _logger.LogInformation("Qobuz sign-in started, return expected on {Origin}", origin);
+        _logger.LogInformation("Qobuz sign-in started, return expected on {Origin} (Android app: {FromApp}, return link: {AppCanReturn})",
+            origin, fromApp, appCanReturn);
 
         return $"{SignInUrl}?ext_app_id={appId}&redirect_url={Uri.EscapeDataString(redirect)}";
     }
@@ -164,11 +196,22 @@ public sealed class QobuzSignInService
     public async Task<SignInResult> CompleteAsync(string? state, string? code)
     {
         // Retiré avant toute vérification : un state ne sert qu'une fois, échec compris.
-        if (string.IsNullOrEmpty(state) || !_pending.TryRemove(state, out var pending)
-            || pending.ExpiresAt < DateTime.UtcNow)
+        if (string.IsNullOrEmpty(state) || !_pending.TryRemove(state, out var pending))
         {
-            _logger.LogWarning("Qobuz sign-in return rejected: unknown, expired or already used state");
+            _logger.LogWarning("Qobuz sign-in return rejected: unknown or already used state");
             return new(Outcome.InvalidState);
+        }
+
+        // Toutes les issues suivantes savent d'où venait la connexion : la page de retour peut
+        // renvoyer vers l'application Android. Copie typée non nulle pour la fonction locale.
+        PendingSignIn found = pending;
+        SignInResult Result(Outcome outcome, string? accountName = null) =>
+            new(outcome, accountName, found.FromApp, found.AppCanReturn);
+
+        if (pending.ExpiresAt < DateTime.UtcNow)
+        {
+            _logger.LogWarning("Qobuz sign-in return rejected: expired state");
+            return Result(Outcome.InvalidState);
         }
 
         // Rôle relu au retour : un compte rétrogradé ou supprimé entre-temps ne termine pas la
@@ -176,14 +219,14 @@ public sealed class QobuzSignInService
         if (_users.Find(pending.AdminId)?.IsAdmin != true)
         {
             _logger.LogWarning("Qobuz sign-in return rejected: the account that started it is no longer an administrator");
-            return new(Outcome.NotAdmin);
+            return Result(Outcome.NotAdmin);
         }
 
         // Pas de code : connexion abandonnée ou refusée sur qobuz.com.
         if (string.IsNullOrEmpty(code))
         {
             _logger.LogWarning("Qobuz sign-in returned without an authorization code");
-            return new(Outcome.Refused);
+            return Result(Outcome.Refused);
         }
 
         string token;
@@ -198,13 +241,13 @@ public sealed class QobuzSignInService
         catch (Exception ex) when (IsNetworkFailure(ex))
         {
             _logger.LogWarning("Qobuz sign-in failed, servers unreachable: {Type}: {Reason}", ex.GetType().Name, ex.Message);
-            return new(Outcome.Unreachable);
+            return Result(Outcome.Unreachable);
         }
         catch (Exception ex)
         {
             // ex.Message : code et message de Qobuz, jamais le code de retour ni le jeton.
             _logger.LogWarning("Qobuz sign-in failed: {Type}: {Reason}", ex.GetType().Name, ex.Message);
-            return new(Outcome.Refused);
+            return Result(Outcome.Refused);
         }
 
         string appSecret;
@@ -215,17 +258,17 @@ public sealed class QobuzSignInService
         catch (Exception ex) when (IsNetworkFailure(ex))
         {
             _logger.LogWarning("Qobuz sign-in failed, servers unreachable: {Type}: {Reason}", ex.GetType().Name, ex.Message);
-            return new(Outcome.Unreachable);
+            return Result(Outcome.Unreachable);
         }
         catch (Exception ex)
         {
             _logger.LogWarning("Automatic app_secret resolution failed: {Type}: {Reason}", ex.GetType().Name, ex.Message);
-            return new(Outcome.AppCredentials);
+            return Result(Outcome.AppCredentials);
         }
 
         Apply(pending.AppId, appSecret, new QobuzLoginResponse { UserAuthToken = token, User = user }, viaToken: false);
         _logger.LogInformation("Qobuz account connected through Qobuz sign-in");
-        return new(Outcome.Connected, user?.DisplayName);
+        return Result(Outcome.Connected, user?.DisplayName);
     }
 
     // Les connexions abandonnées ne s'accumulent pas : purgées à chaque nouveau départ.
@@ -247,5 +290,7 @@ public sealed class QobuzSignInService
         public required string AppId { get; init; }
         public required string PrivateKey { get; init; }
         public required DateTime ExpiresAt { get; init; }
+        public required bool FromApp { get; init; }
+        public required bool AppCanReturn { get; init; }
     }
 }

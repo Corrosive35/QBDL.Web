@@ -146,7 +146,8 @@ Until it is connected, other users see a waiting message. You can connect with:
 
 - **Sign in with Qobuz** — Opens the Qobuz sign-in page; you sign in there and come back connected.
   QBDL never sees your password. Qobuz sends the browser back to the address QBDL is opened with,
-  so there is nothing to configure. In the Android app, the page opens in the phone's browser.
+  so there is nothing to configure. In the Android app, the page opens in the phone's browser,
+  which then reopens the app (app 1.3.0 or later).
   On a computer you land straight back in the app; in the phone's browser, a page names the
   connected account. Qobuz hands back the account already signed in to that browser: to switch
   accounts, sign out of qobuz.com there first.

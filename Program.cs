@@ -330,11 +330,12 @@ app.MapGet(QobuzSignInService.CallbackPath, async (HttpContext ctx, QobuzSignInS
     ctx.Response.Headers["Referrer-Policy"] = "no-referrer";
 
     // Navigateur déjà connecté à QBDL (cookie d'accès validé par UseAuthentication) : retour direct
-    // dans l'application, dont la barre latérale nomme le compte Qobuz. Sans ce cookie, c'est en
-    // général le navigateur externe du téléphone, venu de l'application Android, où « / » ne
-    // montrerait que l'écran de connexion : la page de retour nomme le compte et invite à revenir
-    // dans l'application. Une erreur s'affiche toujours, cookie ou non.
-    if (result.Outcome == QobuzSignInService.Outcome.Connected && ctx.User.Identity?.IsAuthenticated == true)
+    // dans l'application, dont la barre latérale nomme le compte Qobuz. Jamais pour une connexion
+    // lancée depuis l'application Android : son retour arrive dans le navigateur du téléphone, et
+    // c'est vers l'application qu'il faut revenir, cookie ou non (QobuzSignInPage). Sans cookie,
+    // la page de retour nomme le compte. Une erreur s'affiche toujours.
+    if (result.Outcome == QobuzSignInService.Outcome.Connected && !result.FromApp
+        && ctx.User.Identity?.IsAuthenticated == true)
         return Results.Redirect("/");
 
     return Results.Content(QobuzSignInPage(loc, result), "text/html; charset=utf-8");
@@ -386,11 +387,14 @@ static void AdoptRequestLanguage(HttpContext ctx, UserStore users, UserAccount u
 static string QobuzSignInPage(LocalizationService loc, QobuzSignInService.SignInResult result)
 {
     var connected = result.Outcome == QobuzSignInService.Outcome.Connected;
+    var named = !string.IsNullOrWhiteSpace(result.AccountName);
     var message = result.Outcome switch
     {
         // Le nom du compte : qobuz.com redonne sans rien demander celui déjà ouvert dans le
         // navigateur, et un changement de compte doit pouvoir se vérifier d'un coup d'œil.
-        QobuzSignInService.Outcome.Connected when !string.IsNullOrWhiteSpace(result.AccountName)
+        QobuzSignInService.Outcome.Connected when result.FromApp
+            => named ? loc.T("qobuzSignIn.connectedApp", result.AccountName) : loc["qobuzSignIn.connectedAppNoName"],
+        QobuzSignInService.Outcome.Connected when named
             => loc.T("qobuzSignIn.connectedAs", result.AccountName),
         QobuzSignInService.Outcome.Connected => loc["qobuzSignIn.connected"],
         QobuzSignInService.Outcome.InvalidState => loc["qobuzSignIn.error.state"],
@@ -404,6 +408,22 @@ static string QobuzSignInPage(LocalizationService loc, QobuzSignInService.SignIn
     var notice = connected
         ? $"<div class=\"form-success\" role=\"status\">{E(message)}</div>"
         : $"<div class=\"auth-error\" role=\"alert\">{E(message)}</div>";
+
+    // Suite proposée. Depuis un navigateur : ouvrir QBDL. Depuis l'application Android : y revenir,
+    // par le lien qui la rouvre si elle le connaît (QBDLReturn/1), sinon par une simple consigne ;
+    // « Ouvrir QBDL » mènerait à l'écran de connexion du navigateur, sans cookie.
+    var action = !result.FromApp
+        ? $"<a class=\"btn btn-primary\" href=\"/\" style=\"width:100%;text-decoration:none;\">{E(loc["qobuzSignIn.open"])}</a>"
+        : result.AppCanReturn
+            ? $"<a class=\"btn btn-primary\" href=\"{E(QobuzSignInService.AppReturnLink)}\" style=\"width:100%;text-decoration:none;\">{E(loc["qobuzSignIn.backToApp"])}</a>"
+            : $"<p class=\"auth-subtitle\" style=\"text-align:center;\">{E(loc["qobuzSignIn.returnToApp"])}</p>";
+
+    // Succès depuis une application qui sait se rouvrir : tentative automatique au chargement.
+    // Chrome peut exiger un geste pour ouvrir une application, d'où le bouton ci-dessus. Lien fixe,
+    // sans donnée de la requête ; aucune CSP ne restreint les scripts en ligne.
+    var autoReturn = connected && result.FromApp && result.AppCanReturn
+        ? $"<script>window.location.href = \"{QobuzSignInService.AppReturnLink}\";</script>"
+        : "";
 
     return $"""
         <!DOCTYPE html>
@@ -425,10 +445,11 @@ static string QobuzSignInPage(LocalizationService loc, QobuzSignInService.SignIn
                             <p class="auth-subtitle">{E(loc["qobuzSignIn.title"])}</p>
                         </div>
                         {notice}
-                        <a class="btn btn-primary" href="/" style="width:100%;text-decoration:none;">{E(loc["qobuzSignIn.open"])}</a>
+                        {action}
                     </div>
                 </div>
             </div>
+            {autoReturn}
         </body>
         </html>
         """;

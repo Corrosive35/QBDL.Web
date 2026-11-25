@@ -5,6 +5,7 @@
 @inject NavigationManager Nav
 @inject AppGuardService Guard
 @inject ILogger<Login> Logger
+@inject IJSRuntime JS
 @inherits LocalizedComponentBase
 
 @* Le compte Qobuz est celui de toute l'instance : seul un administrateur le connecte. Les autres
@@ -218,7 +219,7 @@ else
 
         try
         {
-            var url = await SignIn.BeginAsync(Guard.UserId, Nav.BaseUri);
+            var url = await SignIn.BeginAsync(Guard.UserId, Nav.BaseUri, await ReadUserAgentAsync());
             Nav.NavigateTo(url, forceLoad: true);
         }
         catch (Exception ex) when (QobuzSignInService.IsNetworkFailure(ex))
@@ -235,6 +236,28 @@ else
         finally
         {
             _loading = false;
+        }
+    }
+
+    /// <summary>
+    /// User-Agent du navigateur, lu au clic (navigator.userAgent) : il dit si la connexion part du
+    /// WebView de l'application Android, et si celle-ci sait se rouvrir après (QobuzSignInService).
+    /// Lu côté navigateur plutôt que dans le HttpContext : dans un circuit Blazor, ce dernier est
+    /// celui de la poignée de main SignalR, absent ou périmé après une reconnexion. Le même appel
+    /// note dans sessionStorage qu'une connexion Qobuz est en cours, pour que la reprise
+    /// (qbdlxResume, _Host.cshtml) recharge cette page au retour. Vide en cas d'échec : la
+    /// connexion se poursuit comme depuis un navigateur.
+    /// </summary>
+    private async Task<string> ReadUserAgentAsync()
+    {
+        try
+        {
+            return await JS.InvokeAsync<string>("qbdlxQobuzSignIn") ?? "";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogDebug("User-Agent unavailable for Qobuz sign-in: {Type}", ex.GetType().Name);
+            return "";
         }
     }
 
