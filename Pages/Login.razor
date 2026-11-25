@@ -1,101 +1,170 @@
 @page "/login"
 @inject QobuzApiService Api
+@inject QobuzSignInService SignIn
 @inject SettingsService Settings
 @inject NavigationManager Nav
 @inject AppGuardService Guard
 @inject ILogger<Login> Logger
 @inherits LocalizedComponentBase
 
-<div class="auth-card">
-    <div class="card">
-        <div class="auth-head">
-            <h2 class="auth-logo">QBDL</h2>
-            <p class="auth-subtitle">@Loc["login.subtitle"]</p>
-        </div>
-
-        @* Le compte Qobuz est celui de toute l'instance : seul un administrateur le connecte. Les
-           autres n'ont qu'à attendre — la reprise depuis le jeton enregistré, elle, vaut pour tous
-           (OnInitializedAsync). *@
-        @if (!Guard.IsAdmin)
-        {
+@* Le compte Qobuz est celui de toute l'instance : seul un administrateur le connecte. Les autres
+   n'ont qu'à attendre, dans la carte habituelle — la reprise depuis le jeton enregistré, elle, vaut
+   pour tous (OnInitializedAsync). *@
+@if (!Guard.IsAdmin)
+{
+    <div class="auth-card">
+        <div class="card">
+            <div class="auth-head">
+                <h2 class="auth-logo">QBDL</h2>
+                <p class="auth-subtitle">@Loc["login.subtitle"]</p>
+            </div>
             <p class="auth-waiting">@Loc["login.waitAdmin"]</p>
-        }
-        else
-        {
-        <div class="qobuz-login-form">
-        @if (!string.IsNullOrEmpty(_error))
-        {
-            <div class="auth-error" role="alert">
-                @_error
-            </div>
-        }
-
-        @if (_useToken)
-        {
-            <div class="form-group">
-                <label>@Loc["login.token"]</label>
-                <input type="password" @bind="_token" placeholder='@Loc["login.tokenPlaceholder"]' />
-            </div>
-        }
-        else
-        {
-            <div class="form-group">
-                <label>@Loc["login.email"]</label>
-                <input type="email" @bind="_email" placeholder='@Loc["login.emailPlaceholder"]' />
-            </div>
-            <div class="form-group">
-                <label>@Loc["login.password"]</label>
-                <input type="password" @bind="_password" placeholder='@Loc["login.passwordPlaceholder"]' />
-            </div>
-        }
-
-        <button class="btn btn-primary" style="width:100%;margin-top:8px;" @onclick="DoLogin" disabled="@_loading">
-            @(_loading ? Loc["login.submitting"] : Loc["login.submit"])
-        </button>
-
-        <div style="text-align:center;margin-top:12px;">
-            <button class="btn btn-sm btn-secondary" @onclick="() => _useToken = !_useToken">
-                @(_useToken ? Loc["login.useEmail"] : Loc["login.useToken"])
-            </button>
         </div>
-
-        <details style="margin-top:16px;">
-            <summary class="auth-more">@Loc["login.customCredentials"]</summary>
-            <div style="margin-top:8px;">
-                <div class="form-group">
-                    <label>@Loc["login.appId"]</label>
-                    <input type="text" @bind="_customAppId" placeholder="App ID" />
-                </div>
-                <div class="form-group">
-                    <label>@Loc["login.appSecret"]</label>
-                    <input type="password" @bind="_customAppSecret" placeholder="App Secret" />
-                </div>
-            </div>
-        </details>
-        </div>
-        }
     </div>
-</div>
+}
+else
+{
+    @* Deux cadres côte à côte au-delà de 768 px, empilés en dessous, Qobuz d'abord : la connexion
+       Qobuz, recommandée, et le jeton en secours. Les éléments propres à une largeur portent qc-desk
+       ou qc-mob (app.css, « Connexion du compte Qobuz ») : texte d'explication, place de l'erreur du
+       jeton, icônes, bouton de déconnexion. Le pied de page est celui de la page : app.css masque
+       celui de MainLayout ici seulement. *@
+    <div class="qobuz-connect">
+        <header class="qc-head">
+            <div>
+                <p class="qc-logo">QBDL</p>
+                <h1 class="qc-title qc-desk">@Loc["login.connectTitle"]</h1>
+                <p class="qc-lead qc-desk">@Loc["login.connectLead"]</p>
+                <p class="qc-lead qc-mob">@Loc["login.noAccountYet"]</p>
+            </div>
+            <span class="bdg run qc-desk">@Loc["users.role.admin"]</span>
+        </header>
+
+        <div class="qobuz-login-form">
+            @* Connexion Qobuz : sur la page de qobuz.com, qui revient ensuite sur
+               /auth/qobuz/callback (QobuzSignInService). Elle remplace la connexion par e-mail et
+               mot de passe, que Qobuz refuse aux applications tierces. *@
+            <section class="qc-cadre qc-principal qobuz-login-oauth" aria-labelledby="qc-titre-qobuz">
+                <span class="qc-cap">@Loc["login.recommended"]</span>
+                <h2 id="qc-titre-qobuz" class="qc-cadre-titre">@Loc["login.qobuz"]</h2>
+                <p class="qc-txt qc-desk">@Loc["login.qobuzText"]</p>
+                <p class="qc-txt qc-mob">@Loc["login.qobuzTextMobile"]</p>
+                <ol class="qc-etapes qc-desk" aria-label='@Loc["login.steps"]'>
+                    <li><b aria-hidden="true">1</b>@Loc["login.step1"]</li>
+                    <li><b aria-hidden="true">2</b>@Loc["login.step2"]</li>
+                    <li><b aria-hidden="true">3</b>@Loc["login.step3"]</li>
+                </ol>
+
+                @* Erreur du cadre : juste au-dessus du bouton qu'elle concerne, aux deux largeurs. *@
+                @if (!string.IsNullOrEmpty(_oauthError))
+                {
+                    <div class="qc-erreur" role="alert"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 17h.01"></path></svg><span>@_oauthError</span></div>
+                }
+                <button class="btn btn-primary qc-go" @onclick="StartQobuzSignIn" disabled="@_loading">
+                    @(_loading ? Loc["login.submitting"] : Loc["login.qobuz"])<svg class="qc-desk" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5"></path></svg><svg class="qc-mob" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M14 5h5v5M19 5l-8 8M18 14v5H5V6h5"></path></svg>
+                </button>
+
+                @* Bureau : la première aide centrée sans icône, la seconde sous un filet. Mobile : les
+                   deux avec leur icône, groupées. qobuz.com redonne sans rien demander le compte déjà
+                   ouvert dans le navigateur, et aucun paramètre connu de sa page de connexion ne force
+                   la saisie : la page de retour nomme le compte, la seconde aide explique comment en
+                   changer. *@
+                <div class="qc-aides">
+                    <p class="qc-aide qc-aide-mdp"><svg class="qc-mob" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="5" y="11" width="14" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 018 0v3"></path></svg><span>@Loc["login.qobuzHint"]</span></p>
+                    <p class="qc-aide qc-aide-compte"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5h.01"></path></svg><span>@Loc["login.qobuzSwitch"]</span></p>
+                </div>
+            </section>
+
+            <div class="qc-ou qc-mob" aria-hidden="true"><span></span><span class="qc-cap">@Loc["login.or"]</span><span></span></div>
+
+            @* Repli : un jeton copié depuis play.qobuz.com, toujours visible. L'erreur se place en tête
+               au bureau, sous le champ sur mobile, comme dessiné : un seul des deux emplacements est
+               affiché à une largeur donnée. *@
+            <section class="qc-cadre qc-repli qobuz-login-token" aria-labelledby="qc-titre-jeton">
+                <span class="qc-cap qc-desk">@Loc["login.fallback"]</span>
+                <h2 id="qc-titre-jeton" class="qc-cadre-titre">@Loc["login.tokenTitle"]</h2>
+                @if (!string.IsNullOrEmpty(_tokenError))
+                {
+                    <div class="qc-erreur qc-desk" role="alert"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 17h.01"></path></svg><span>@_tokenError</span></div>
+                }
+
+                <div>
+                    <label class="qc-lab" for="qc-jeton">@Loc["login.token"]</label>
+                    <input id="qc-jeton" type="password" @bind="_token" placeholder='@Loc["login.tokenPlaceholder"]'
+                           aria-invalid="@(string.IsNullOrEmpty(_tokenError) ? null : "true")" />
+                </div>
+                @if (!string.IsNullOrEmpty(_tokenError))
+                {
+                    <div class="qc-erreur qc-mob" role="alert"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6M12 17h.01"></path></svg><span>@_tokenError</span></div>
+                }
+                <p class="qc-aide qc-aide-jeton qc-desk">@Loc["login.tokenHelp"]</p>
+
+                <button class="btn btn-secondary qc-go" @onclick="DoTokenLogin" disabled="@_loading">
+                    @(_loading ? Loc["login.submitting"] : Loc["login.tokenSubmit"])
+                </button>
+                <p class="qc-aide qc-mob"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5h.01"></path></svg><span>@Loc["login.tokenHelpMobile"]</span></p>
+
+                @* Pour un jeton émis par une autre application que le lecteur web. La connexion
+                   Qobuz, elle, passe toujours par l'app_id du lecteur web, le seul dont la clé
+                   d'échange est connue. *@
+                <details class="qc-depli">
+                    <summary>@Loc["login.customCredentials"]<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 9l6 6 6-6"></path></svg></summary>
+                    <div class="qc-depli-corps">
+                        <div>
+                            <label class="qc-lab" for="qc-app-id">@Loc["login.appId"]</label>
+                            <input id="qc-app-id" type="text" @bind="_customAppId" placeholder="App ID" />
+                        </div>
+                        <div>
+                            <label class="qc-lab" for="qc-app-secret">@Loc["login.appSecret"]</label>
+                            <input id="qc-app-secret" type="password" @bind="_customAppSecret" placeholder="App Secret" />
+                        </div>
+                    </div>
+                </details>
+            </section>
+        </div>
+
+        @* Pied de page propre à la page : déconnexion en contour au bureau, en verre sur mobile ;
+           langue en liens au bureau, en pilule sur mobile (même composant, habillé par la page) ;
+           version au bureau seulement. *@
+        <footer class="qc-pied">
+            <form method="post" action="/auth/lock" class="qc-desk">
+                <button type="submit" class="btn btn-outline">@Loc.T("nav.logoutAs", Guard.Account?.Username)</button>
+            </form>
+            <form method="post" action="/auth/lock" class="qc-mob">
+                <button type="submit" class="btn btn-secondary">@Loc.T("nav.logoutAs", Guard.Account?.Username)</button>
+            </form>
+            <div class="qc-pied-droite">
+                <LanguageSwitch />
+                <span class="qc-cap qc-version qc-desk">v@(AppInfo.Version)</span>
+            </div>
+        </footer>
+    </div>
+}
 
 @code {
-    private string _email = "";
-    private string _password = "";
     private string _token = "";
     private string _customAppId = "";
     private string _customAppSecret = "";
-    private string _error = "";
+    // Un message par bloc : chacun peut devenir un cadre à part sans toucher au code.
+    private string _oauthError = "";
+    private string _tokenError = "";
     private bool _loading;
-    private bool _useToken;
 
     protected override void OnInitialized()
     {
         base.OnInitialized();
 
         var s = Settings.Settings;
-        _email = s.Email;
         _customAppId = s.AppId;
         _customAppSecret = s.AppSecret;
-        _useToken = s.UseTokenLogin;
+
+        SignIn.AccountConnected += OnAccountConnected;
+    }
+
+    public override void Dispose()
+    {
+        SignIn.AccountConnected -= OnAccountConnected;
+        base.Dispose();
     }
 
     /// <summary>
@@ -132,27 +201,64 @@
         Nav.NavigateTo("/", forceLoad: false);
     }
 
-    private async Task DoLogin()
+    /// <summary>
+    /// Départ de la connexion Qobuz. La page de qobuz.com est hors du serveur : chargement complet
+    /// dans un navigateur, et navigateur externe dans l'application Android, dont le WebView
+    /// n'affiche que le serveur. Dans ce second cas cette page reste ouverte et se recharge quand le
+    /// retour aboutit (<see cref="OnAccountConnected"/>).
+    /// </summary>
+    private async Task StartQobuzSignIn()
     {
         // Revérifié ici et pas seulement à l'affichage : le formulaire masqué ne suffit pas à
         // interdire l'appel.
         if (!Guard.IsAdmin) return;
 
-        _error = "";
+        _oauthError = "";
+        _loading = true;
+
+        try
+        {
+            var url = await SignIn.BeginAsync(Guard.UserId, Nav.BaseUri);
+            Nav.NavigateTo(url, forceLoad: true);
+        }
+        catch (Exception ex) when (QobuzSignInService.IsNetworkFailure(ex))
+        {
+            Logger.LogWarning("Qobuz sign-in could not start, servers unreachable: {Type}: {Reason}", ex.GetType().Name, ex.Message);
+            _oauthError = Loc["login.error.network"];
+        }
+        catch (Exception ex)
+        {
+            // ex.Message nomme l'étape qui a échoué, jamais l'app_id ni la clé lus dans le bundle.
+            Logger.LogWarning("Qobuz sign-in could not start: {Type}: {Reason}", ex.GetType().Name, ex.Message);
+            _oauthError = Loc["login.error.qobuzUnavailable"];
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    // Connexion enregistrée ailleurs, en général par le retour de la connexion Qobuz dans le
+    // navigateur externe, pendant que cette page attend dans le WebView. Le rechargement fait entrer
+    // dans l'application. Ignoré quand c'est cette page qui vient d'enregistrer un jeton : ApplyLogin
+    // navigue déjà.
+    private void OnAccountConnected()
+    {
+        if (_loginApplied) return;
+        _ = InvokeAsync(() => Nav.NavigateTo("/", forceLoad: true));
+    }
+
+    private async Task DoTokenLogin()
+    {
+        if (!Guard.IsAdmin) return;
+
+        _tokenError = "";
         _loading = true;
         _loginApplied = false;
 
         try
         {
-            if (_useToken)
-            {
-                if (string.IsNullOrWhiteSpace(_token)) { _error = Loc["login.error.noToken"]; return; }
-            }
-            else
-            {
-                if (string.IsNullOrWhiteSpace(_email)) { _error = Loc["login.error.noEmail"]; return; }
-                if (string.IsNullOrWhiteSpace(_password)) { _error = Loc["login.error.noPassword"]; return; }
-            }
+            if (string.IsNullOrWhiteSpace(_token)) { _tokenError = Loc["login.error.noToken"]; return; }
 
             bool hasCustomCredentials = !string.IsNullOrEmpty(_customAppId) && !string.IsNullOrEmpty(_customAppSecret);
 
@@ -170,10 +276,10 @@
             {
                 appId = await Api.GetAppIdAsync();
             }
-            catch (Exception ex) when (!IsNetworkFailure(ex))
+            catch (Exception ex) when (!QobuzSignInService.IsNetworkFailure(ex))
             {
                 Logger.LogWarning("Automatic app_id resolution failed: {Type}: {Reason}", ex.GetType().Name, ex.Message);
-                _error = Loc["login.error.noAppCredentials"];
+                _tokenError = Loc["login.error.noAppCredentials"];
                 return;
             }
 
@@ -185,28 +291,25 @@
             {
                 appSecret = await Api.GetAppSecretAsync(appId, _loginResult.UserAuthToken!);
             }
-            catch (Exception ex) when (!IsNetworkFailure(ex))
+            catch (Exception ex) when (!QobuzSignInService.IsNetworkFailure(ex))
             {
                 Logger.LogWarning("Automatic app_secret resolution failed: {Type}: {Reason}", ex.GetType().Name, ex.Message);
-                _error = Loc["login.error.noAppCredentials"];
+                _tokenError = Loc["login.error.noAppCredentials"];
                 return;
             }
 
             ApplyLogin(appId, appSecret);
         }
-        catch (Exception ex) when (IsNetworkFailure(ex))
+        catch (Exception ex) when (QobuzSignInService.IsNetworkFailure(ex))
         {
             Logger.LogWarning("Qobuz login failed, servers unreachable: {Type}: {Reason}", ex.GetType().Name, ex.Message);
-            _error = Loc["login.error.network"];
+            _tokenError = Loc["login.error.network"];
         }
         catch (Exception ex)
         {
-            // ex.Message : code et motif HTTP, ou réponse d'erreur de Qobuz — jamais l'URL de
-            // user/login, qui porte le mot de passe, ni le jeton.
+            // ex.Message : code et motif HTTP, ou réponse d'erreur de Qobuz — jamais le jeton.
             Logger.LogWarning("Qobuz login failed: {Type}: {Reason}", ex.GetType().Name, ex.Message);
-            _error = ex.Message.Contains("401") || ex.Message.Contains("Invalid")
-                ? Loc["login.error.invalidCredentials"]
-                : Loc.T("login.error.generic", ex.Message);
+            _tokenError = Loc.T("login.error.generic", ex.Message);
         }
         finally
         {
@@ -223,31 +326,23 @@
         }
     }
 
-    // Panne réseau : aucune réponse HTTP (DNS, connexion, TLS) ou délai dépassé. Une
-    // HttpRequestException *portant* un code HTTP vient au contraire d'une réponse de Qobuz — un
-    // mauvais mot de passe (401) ne doit pas s'afficher comme « serveurs injoignables ».
-    private static bool IsNetworkFailure(Exception ex) =>
-        ex is HttpRequestException { StatusCode: null } or TaskCanceledException;
-
     /// <summary>
-    /// Connexion au compte Qobuz sous l'app_id donné. Un jeton n'est accepté qu'avec l'app_id sous
-    /// lequel il a été émis ; quand user/get le refuse (4xx), Qobuz ne dit pas s'il est invalide,
-    /// expiré ou émis pour une autre application — le message n'en écarte donc aucune.
-    /// Renvoie null une fois le message d'erreur posé.
+    /// Connexion au compte Qobuz par jeton, sous l'app_id donné. Un jeton n'est accepté qu'avec
+    /// l'app_id sous lequel il a été émis ; quand user/get le refuse (4xx), Qobuz ne dit pas s'il
+    /// est invalide, expiré ou émis pour une autre application — le message n'en écarte donc
+    /// aucune. Renvoie null une fois le message d'erreur posé.
     /// </summary>
     private async Task<Models.QobuzLoginResponse?> SignInAsync(string appId)
     {
-        if (!_useToken)
-            return await Api.LoginWithEmailAsync(appId, _email, _password);
-
         try
         {
             return await Api.LoginWithTokenAsync(appId, _token);
         }
         catch (HttpRequestException ex) when ((int?)ex.StatusCode is >= 400 and < 500)
         {
-            Logger.LogWarning("Qobuz rejected the token for app_id {AppId} (HTTP {Status})", appId, (int)ex.StatusCode!.Value);
-            _error = Loc["login.error.tokenRejected"];
+            // Sans l'app_id lui-même : aucun app_id ni app_secret dans les journaux.
+            Logger.LogWarning("Qobuz rejected the token for the current app_id (HTTP {Status})", (int)ex.StatusCode!.Value);
+            _tokenError = Loc["login.error.tokenRejected"];
             return null;
         }
     }
@@ -259,27 +354,17 @@
         ApplyLogin(appId, appSecret);
     }
 
+    // Enregistrement commun avec la connexion Qobuz (QobuzSignInService.Apply), puis entrée dans
+    // l'application. _loginApplied est posé avant : Apply prévient les pages de connexion ouvertes,
+    // celle-ci comprise, et elle ne doit pas naviguer deux fois.
     private void ApplyLogin(string appId, string appSecret)
     {
-        var result = _loginResult!;
-        Api.SetCredentials(appId, appSecret, result.UserAuthToken!);
         _loginApplied = true;
-
-        Settings.Update(s => {
-            s.AppId = appId;
-            s.AppSecret = appSecret;
-            s.UserAuthToken = result.UserAuthToken!;
-            s.Email = _useToken ? "" : _email;
-            s.UseTokenLogin = _useToken;
-            // Identité et état de l'abonnement : même code que la revalidation au démarrage, pour
-            // que les deux chemins ne puissent pas diverger.
-            s.ApplyAccountStatus(result.User);
-        });
-
+        SignIn.Apply(appId, appSecret, _loginResult!, viaToken: true);
         Nav.NavigateTo("/", forceLoad: true);
     }
 
     private Models.QobuzLoginResponse? _loginResult;
-    // Posé par ApplyLogin : sans lui, DoLogin rétablit les identifiants enregistrés en sortant.
+    // Posé par ApplyLogin : sans lui, DoTokenLogin rétablit les identifiants enregistrés en sortant.
     private bool _loginApplied;
 }

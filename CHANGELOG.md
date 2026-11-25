@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-11-24
+
+### Added
+- **« Se connecter avec Qobuz »** : l'administrateur se connecte sur la page de Qobuz, comme dans
+  le lecteur web, puis revient dans QBDL avec le compte connecté. QBDL ne voit jamais le mot de
+  passe. Dans l'application Android, cette page s'ouvre dans le navigateur du téléphone ; la page
+  de connexion restée ouverte dans l'application se recharge quand la connexion aboutit. Le retour
+  arrive sur une nouvelle adresse, `/auth/qobuz/callback`, valable une seule fois et dix minutes.
+  Aucune adresse n'est à configurer : c'est celle par laquelle QBDL est ouvert. Au bureau, on
+  revient directement dans l'application, dont la barre latérale nomme le compte ; dans le
+  navigateur du téléphone, une page nomme le compte connecté. qobuz.com redonne sans rien demander
+  le compte déjà ouvert dans le navigateur : la page de connexion rappelle de s'en déconnecter
+  avant de changer de compte. La connexion par jeton reste disponible en secours, dans un second
+  cadre : les deux sont côte à côte sur ordinateur, empilés sur mobile.
+
+### Changed
+- **Fin de la connexion par e-mail et mot de passe** : Qobuz la refuse aux applications tierces
+  depuis avril 2026 environ, même avec des identifiants corrects, et la page affichait
+  « Identifiants invalides ». « Se connecter avec Qobuz » la remplace. L'e-mail enregistré par une
+  version précédente est effacé à la connexion suivante. Un refus de Qobuz est journalisé avec son
+  code et son message, sans jamais le code de retour ni le jeton.
+
+### Fixed
+- Textes indicatifs des champs : le champ identifiant de l'écran de connexion à QBDL n'en avait
+  pas, ni aucun champ de l'écran de création du premier administrateur (identifiant, mot de passe,
+  confirmation).
+- Recherche : la flèche des listes de tri ne chevauche plus le texte (« Pertinence » dans l'onglet
+  Artistes). Les quatre listes avaient perdu la place réservée à la flèche.
+
 ## [1.9.0] - 2026-11-23
 
 ### Added

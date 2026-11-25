@@ -50,15 +50,18 @@
                         <div class="form-group">
                             <label for="setup-username">@Loc["auth.username"]</label>
                             <input id="setup-username" name="username" type="text" autocomplete="username"
-                                   autocapitalize="none" spellcheck="false" value="@UserStore.DefaultAdminName" />
+                                   autocapitalize="none" spellcheck="false" value="@UserStore.DefaultAdminName"
+                                   placeholder='@Loc["lock.usernamePlaceholder"]' />
                         </div>
                         <div class="form-group">
                             <label for="setup-password">@Loc["auth.password"]</label>
-                            <input id="setup-password" name="password" type="password" autocomplete="new-password" autofocus />
+                            <input id="setup-password" name="password" type="password" autocomplete="new-password" autofocus
+                                   placeholder='@Loc["lock.passwordPlaceholder"]' />
                         </div>
                         <div class="form-group">
                             <label for="setup-confirm">@Loc["auth.confirm"]</label>
-                            <input id="setup-confirm" name="confirm" type="password" autocomplete="new-password" />
+                            <input id="setup-confirm" name="confirm" type="password" autocomplete="new-password"
+                                   placeholder='@Loc["setup.confirmPlaceholder"]' />
                         </div>
                         <button type="submit" class="btn btn-primary" style="width:100%;margin-top:8px;">@Loc["setup.create"]</button>
                     </form>
@@ -98,7 +101,8 @@ else if (account == null)
                         <div class="form-group">
                             <label for="access-username">@Loc["auth.username"]</label>
                             <input id="access-username" name="username" type="text" autocomplete="username"
-                                   autocapitalize="none" spellcheck="false" autofocus disabled="@Guard.IsLockedOut" />
+                                   autocapitalize="none" spellcheck="false" autofocus disabled="@Guard.IsLockedOut"
+                                   placeholder='@Loc["lock.usernamePlaceholder"]' />
                         </div>
                         <div class="form-group">
                             <label for="access-password">@Loc["auth.password"]</label>
